@@ -1,0 +1,5 @@
+Media player symbols in Unicode
+https://en.wikipedia.org/wiki/Media_control_symbols
+
+Material design icons
+https://github.com/google/material-design-icons
