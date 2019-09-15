@@ -1,4 +1,27 @@
-import threading
+'''
+Copyright (c) 2018 Modul 9/HiFiBerry
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+'''
+
+from threading import Thread
+from time import time, sleep
 
 
 class Metadata:
@@ -6,10 +29,10 @@ class Metadata:
     Class to start metadata of a song
     """
 
-    def __init__(self, artist=None, title=None,
+    def __init__( self, artist=None, title=None,
                  albumArtist=None, albumTitle=None, artUrl=None,
                  discNumber=None, trackNumber=None,
-                 playerName=None, fixProblems=True):
+                 playerName=None ):
         self.artist = artist
         self.title = title
         self.albumArtist = albumArtist
@@ -18,98 +41,87 @@ class Metadata:
         self.discNumber = discNumber
         self.tracknumber = trackNumber
         self.playerName = playerName
-        if fixProblems:
-            self.fixProblems()
 
-    def sameSong(self, other):
-        if not isinstance(other, Metadata):
+    def sameSong( self, other ):
+        if not isinstance( other, Metadata ):
             return NotImplemented
 
         return self.artist == other.artist and self.title == other.title
 
-    def fixProblems(self):
+    def fixProblems( self ):
         """
         Cleanup metadata for known problems
         """
 
         # unknown artist, but artist - title in title
         # seen on mpd web radio streams
-        if (self.playerName == "mpd") and \
-            (self.artist == "unknown artist") and \
-                (" - " in self.title):
-            [artist, title] = self.title.split(" - ", 2)
+        if ( self.playerName == "mpd" ) and \
+            ( self.artist == "unknown artist" ) and \
+                ( " - " in self.title ):
+            [artist, title] = self.title.split( " - ", 1 )
             self.artist = artist
             self.title = title
 
-    def __str__(self):
-        return "{}: {} ({}) {}".format(self.artist, self.title,
-                                       self.albumTitle, self.artUrl)
+    def __str__( self ):
+        return "{}: {} ({}) {}".format( self.artist, self.title,
+                                       self.albumTitle, self.artUrl )
 
 
 class MetadataDisplay:
 
-    def __init__(self):
+    def __init__( self ):
         pass
 
-    def metadata(self, metadata):
+    def notify( self, metadata ):
         pass
 
 
-class MetadataConsole(MetadataDisplay):
+class MetadataConsole( MetadataDisplay ):
 
-    def __init__(self):
+    def __init__( self ):
         super()
         pass
 
-    def metadata(self, metadata):
-        print("{:16s}: {}".format(metadata.playerName, metadata))
+    def notify( self, metadata ):
+        print( "{:16s}: {}".format( metadata.playerName, metadata ) )
 
 
-import http.server
+class DummyMetadataCreator( Thread ):
+    """
+    A class just use for development. It creates dummy metadata records and
+    send it to the given MetadataDisplay objects
+    """
 
+    def __init__( self, display=None, interval=10 ):
+        super().__init__()
+        self.stop = False
+        self.interval = interval
+        self.display = display
 
-class MetadataHandler(http.server.BaseHTTPRequestHandler):
+    def run( self ):
+        import random
 
-    @classmethod
-    def set_metadata(cls, metadata):
-        cls.metadata = metadata
+        covers = ["https://images-na.ssl-images-amazon.com/images/I/81R6Jcf5eoL._SL1500_.jpg",
+                  "https://townsquare.media/site/443/files/2013/03/92rage.jpg?w=980&q=75",
+                  "https://i0.wp.com/neu.rage-cover-cologne.de/wp-content/uploads/2017/12/rage-against-the-machine-ca8389d26e931c5e.jpg",
+                  "https://www.rollingstone.de/wp-content/uploads/2019/04/23/11/rammstein-artwork.jpg",
+                  "https://www.rammstein.de/wp-content/uploads/2010/03/5373042_sehnsucht_aec.jpg",
+                  "http://1t8r984d8wic2jedckksuin1.wpengine.netdna-cdn.com/wp-content/uploads/2016/03/093624642428-1024x1024.jpg",
+                  "https://streamd.hitparade.ch/cdimages/pippo_pollina-elementare_watson_a.jpg",
+                  "https://media05.myheimat.de/2012/10/05/2342415_orig.jpg"
+            ]
 
-    def _set_headers(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
+        while not( self.stop ):
+            rnd = random.randrange( 100000 )
 
-    def do_GET(self):
-        print("GET")
-        self._set_headers()
-#        self.wfile.write("<html><body><h1>{}: {}</h1></body></html>".format(
-#            MetadataHandler.metadata.artist,
-#            MetadataHandler.self.metadata.title
-#       ))
-        self.wfile.write("<html><body><h1>Hi!</h1></body></html>")
-        print("GET done")
+            coverindex = random.randrange( len( covers ) )
 
-    def do_HEAD(self):
-        self._set_headers()
+            md = Metadata( artist="Artist {}".format( rnd ),
+                          title="Title {}".format( rnd ),
+                          albumTitle="Album {}".format( rnd ),
+                          artUrl=covers[coverindex] )
+            self.display.notify( md )
+            sleep( self.interval )
 
-    def do_POST(self):
-        # Doesn't do anything with posted data
-        self._set_headers()
-        self.wfile.write("<html><body><h1>POST!</h1></body></html>")
-
-
-class MetadataWebserver(MetadataDisplay):
-
-    def __init__(self, port=8080):
-        self.port = port
-        super()
-
-    def run_server(self):
-        import socketserver
-
-        self.server = socketserver.TCPServer(("", self.port), MetadataHandler)
-        self.server_thread = threading.Thread(target=self.server.serve_forever)
-        self.server_thread.daemon = True
-
-    def metadata(self, metadata):
-        MetadataHandler.set_metadata(metadata)
+    def stop( self ):
+        self.stop = True

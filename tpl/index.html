@@ -76,6 +76,13 @@
       }      
 
    </script>
+   
+   <style>
+    .artistrow { height: 5%; margin: auto; font-size: 4vh; justify-content: center }
+    .albumrow { height: 4%;  font-size: 3vh; justify-content: center}
+    .navrow { height:10%; justify-content: center; padding: 1vh }
+	.centered {justify-content: center}
+</style>
 
 
   </head>
@@ -83,14 +90,14 @@
     
     <div class="container" style="height: 100vh">
 
-		<div class="row justify-content-md-center" style="height: 5%; margin: auto; font-size: 4vh;">
-		<div id="artist">-</div>
+		<div class="row artistrow">
+		<div id="artist">unknown</div>
 		<div>/</div>
-		<div id="title">-</div>
+		<div id="title">unknown</div>
 		</div>
 	
-	    <div class="row justify-content-md-center" style="height: 4%;  font-size: 3vh;">
-		<div class="display-5" id="albumTitle">-</div>
+	    <div class="row albumrow">
+		<div class="display-5" id="albumTitle"></div>
 		</div>
 			
 		
@@ -98,7 +105,7 @@
 			<img id="coverArt" class="h-100 mx-auto rounded d-block img-fluid" src=""></img>
 		</div>
 		
-	    <div class="row justify-content-md-center" style="height:10%">
+	    <div class="row navrow" >
 			    <img id="prev" class="h-100 img-fluid" src="static/ic_skip_previous_24px.svg">
 			    <img id="playpause" class="h-100 img-fluid" src="static/ic_play_arrow_24px.svg" onClick="playPause();">
 			    <img id="next" class="h-100 img-fluid" src="static/ic_skip_next_24px.svg">
