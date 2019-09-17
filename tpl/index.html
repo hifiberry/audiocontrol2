@@ -11,10 +11,11 @@
     <!-- Material font -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 
-    <title>HiFiBerryOS</title>
+    <title>{{get('playerName', 'unknown')}}</title>
     
 	<script>
 	  var state = "unknown";
+	  var playerName = "{{get('playerName', 'unknown')}}";
 	  
 	  var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
 	  var address = protocol + window.location.host + window.location.pathname + 'websocket';
@@ -27,10 +28,10 @@
 				document.getElementById("artist").innerHTML = data.artist
 		  	}
  			if (data.hasOwnProperty('title')){
-				document.getElementById("title").innerHTML = data.artist
+				document.getElementById("title").innerHTML = data.title
 		  	}
  			if (data.hasOwnProperty('albumTitle')){
-				document.getElementById("albumTitle").innerHTML = data.artist
+				document.getElementById("albumTitle").innerHTML = data.albumTitle
 		  	}
 		  	// We use either artData or artUrl with this. artUrl is used for external
 		  	// URLs, artData for covers stored locally
@@ -40,12 +41,21 @@
 		  	if (data.hasOwnProperty('artUrl')) {
 		  		document.getElementById("coverArt").src = data["artUrl"];
 		  	}
+		  	
+		  	if (data.hasOwnProperty('playerName')) {
+		  		playerName = data["playerName"];
+		  		document.title = playerName;
+		  	}
+		  	
         };
   	  console.log('Web Socket enabled.');
 	  })();
 	  
-	  function onSend(){
-		socket.send('e');
+	  function sendCommand(cmd){
+	  	socket.send(JSON.stringify({
+  			"command": cmd,
+  			"playerName": playerName 
+		}));
       }
       
       function playPause() {
@@ -58,13 +68,23 @@
       }
       
       function play() {
+        sendCommand("Play");
         playing();
         state="playing";
       }
 
       function pause() {
+        sendCommand("Pause");
         paused();
         state="paused";
+      }
+      
+      function next() {
+        sendCommand("Next");
+      }
+      
+      function previous() {
+        sendCommand("Previous");
       }
       
       function playing() {
@@ -91,24 +111,24 @@
     <div class="container" style="height: 100vh">
 
 		<div class="row artistrow">
-		<div id="artist">unknown</div>
+		<div id="artist">{{get('artist', 'unknown')}}</div>
 		<div>/</div>
-		<div id="title">unknown</div>
+		<div id="title">{{get('title', 'unknown')}}</div>
 		</div>
 	
 	    <div class="row albumrow">
-		<div class="display-5" id="albumTitle"></div>
+		<div class="display-5" id="albumTitle">{{get('albumTitle', 'unknown')}}</div>
 		</div>
 			
 		
 	    <div class="row mx-auto" style="height:81%">
-			<img id="coverArt" class="h-100 mx-auto rounded d-block img-fluid" src=""></img>
+			<img id="coverArt" class="h-100 mx-auto rounded d-block img-fluid" src="{{get('artUrl', '')}}"></img>
 		</div>
 		
 	    <div class="row navrow" >
-			    <img id="prev" class="h-100 img-fluid" src="static/ic_skip_previous_24px.svg">
+			    <img id="prev" class="h-100 img-fluid" src="static/ic_skip_previous_24px.svg" onClick="previous();">
 			    <img id="playpause" class="h-100 img-fluid" src="static/ic_play_arrow_24px.svg" onClick="playPause();">
-			    <img id="next" class="h-100 img-fluid" src="static/ic_skip_next_24px.svg">
+			    <img id="next" class="h-100 img-fluid" src="static/ic_skip_next_24px.svg" onClick="next();">
 		</div>
 		
 	<div>	

@@ -29,10 +29,11 @@ class Metadata:
     Class to start metadata of a song
     """
 
-    def __init__( self, artist=None, title=None,
-                 albumArtist=None, albumTitle=None, artUrl=None,
+    def __init__(self, artist=None, title=None,
+                 albumArtist=None, albumTitle=None,
+                 artUrl=None,
                  discNumber=None, trackNumber=None,
-                 playerName=None ):
+                 playerName=None):
         self.artist = artist
         self.title = title
         self.albumArtist = albumArtist
@@ -42,63 +43,84 @@ class Metadata:
         self.tracknumber = trackNumber
         self.playerName = playerName
 
-    def sameSong( self, other ):
-        if not isinstance( other, Metadata ):
+    def sameSong(self, other):
+        if not isinstance(other, Metadata):
             return NotImplemented
 
         return self.artist == other.artist and self.title == other.title
 
-    def fixProblems( self ):
+    def sameArtwork(self, other):
+        if not isinstance(other, Metadata):
+            return NotImplemented
+
+        return self.artUrl == other.artUrl
+
+    def __eq__(self, other):
+        if not isinstance(other, Metadata):
+            return NotImplemented
+
+        return self.artist == other.artist and \
+            self.title == other.title and \
+            self.artUrl == other.artUrl and \
+            self.albumTitle == other.albumTitle
+
+    def __ne__(self, other):
+        if not isinstance(other, Metadata):
+            return NotImplemented
+
+        return not(self.__eq__(other))
+
+    def fixProblems(self):
         """
         Cleanup metadata for known problems
         """
 
         # unknown artist, but artist - title in title
         # seen on mpd web radio streams
-        if ( self.playerName == "mpd" ) and \
-            ( self.artist == "unknown artist" ) and \
-                ( " - " in self.title ):
-            [artist, title] = self.title.split( " - ", 1 )
+        if (self.playerName == "mpd") and \
+            (self.artist == "unknown artist") and \
+                (" - " in self.title):
+            [artist, title] = self.title.split(" - ", 1)
             self.artist = artist
             self.title = title
 
-    def __str__( self ):
-        return "{}: {} ({}) {}".format( self.artist, self.title,
-                                       self.albumTitle, self.artUrl )
+    def __str__(self):
+        return "{}: {} ({}) {}".format(self.artist, self.title,
+                                       self.albumTitle, self.artUrl)
 
 
 class MetadataDisplay:
 
-    def __init__( self ):
+    def __init__(self):
         pass
 
-    def notify( self, metadata ):
+    def notify(self, metadata):
         pass
 
 
-class MetadataConsole( MetadataDisplay ):
+class MetadataConsole(MetadataDisplay):
 
-    def __init__( self ):
+    def __init__(self):
         super()
         pass
 
-    def notify( self, metadata ):
-        print( "{:16s}: {}".format( metadata.playerName, metadata ) )
+    def notify(self, metadata):
+        print("{:16s}: {}".format(metadata.playerName, metadata))
 
 
-class DummyMetadataCreator( Thread ):
+class DummyMetadataCreator(Thread):
     """
     A class just use for development. It creates dummy metadata records and
     send it to the given MetadataDisplay objects
     """
 
-    def __init__( self, display=None, interval=10 ):
+    def __init__(self, display=None, interval=10):
         super().__init__()
         self.stop = False
         self.interval = interval
         self.display = display
 
-    def run( self ):
+    def run(self):
         import random
 
         covers = ["https://images-na.ssl-images-amazon.com/images/I/81R6Jcf5eoL._SL1500_.jpg",
@@ -108,20 +130,26 @@ class DummyMetadataCreator( Thread ):
                   "https://www.rammstein.de/wp-content/uploads/2010/03/5373042_sehnsucht_aec.jpg",
                   "http://1t8r984d8wic2jedckksuin1.wpengine.netdna-cdn.com/wp-content/uploads/2016/03/093624642428-1024x1024.jpg",
                   "https://streamd.hitparade.ch/cdimages/pippo_pollina-elementare_watson_a.jpg",
-                  "https://media05.myheimat.de/2012/10/05/2342415_orig.jpg"
-            ]
+                  "https://media05.myheimat.de/2012/10/05/2342415_orig.jpg",
+                  "file://static/unknown.png",
+                  "file://static/unknown.png",
+                  "file://static/unknown.png",
+                  "file://static/unknown.png",
+                  "file://static/unknown.png",
+                  ]
 
-        while not( self.stop ):
-            rnd = random.randrange( 100000 )
+        while not(self.stop):
+            rnd = random.randrange(100000)
 
-            coverindex = random.randrange( len( covers ) )
+            coverindex = random.randrange(len(covers))
 
-            md = Metadata( artist="Artist {}".format( rnd ),
-                          title="Title {}".format( rnd ),
-                          albumTitle="Album {}".format( rnd ),
-                          artUrl=covers[coverindex] )
-            self.display.notify( md )
-            sleep( self.interval )
+            md = Metadata(artist="Artist {}".format(rnd),
+                          title="Title {}".format(rnd),
+                          albumTitle="Album {}".format(rnd),
+                          artUrl=covers[coverindex],
+                          playerName="dummy")
+            self.display.notify(md)
+            sleep(self.interval)
 
-    def stop( self ):
+    def stop(self):
         self.stop = True

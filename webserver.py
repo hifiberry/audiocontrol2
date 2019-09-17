@@ -23,6 +23,9 @@ SOFTWARE.
 import logging
 import threading
 import json
+import os
+import copy
+import urllib.parse
 
 from bottle import Bottle, template, static_file
 from bottle.ext.websocket import GeventWebSocketServer, websocket
@@ -30,78 +33,134 @@ from bottle.ext.websocket import GeventWebSocketServer, websocket
 from metadata import Metadata, MetadataDisplay
 
 
-class AudioControlWebserver( MetadataDisplay ):
+class AudioControlWebserver(MetadataDisplay):
 
-    def __init__( self, port=8080 ):
+    def __init__(self, port=80, host='0.0.0.0', debug=False):
         self.port = port
+        self.host = host
+        self.debug = debug
         self.bottle = Bottle()
         self.route()
-
-        thread = threading.Thread( target=self.startServer, args=() )
+        self.controller = None
+        thread = threading.Thread(target=self.startServer, args=())
         thread.daemon = True
         thread.start()
-        logging.info( "Started web server on port {}".format( self.port ) )
+        logging.info("Started web server on port {}".format(self.port))
 
         # TODO: debug code
-        self.metadata = Metadata( "Artist", "Title", "Album" )
+        self.metadata = Metadata("Artist", "Title", "Album")
         self.websockets = set()
 
-    def route( self ):
-        self.bottle.route( '/',
-                           method="GET",
-                           callback=self.index_handler )
-        self.bottle.route( '/websocket',
-                           method="GET",
-                           callback=self.websocket_handler,
-                           apply=websocket )
-        self.bottle.route( '/static/<filename>',
-                           method="GET",
-                           callback=self.static_handler )
+    def route(self):
+        self.bottle.route('/',
+                          method="GET",
+                          callback=self.index_handler)
+        self.bottle.route('/websocket',
+                          method="GET",
+                          callback=self.websocket_handler,
+                          apply=websocket)
+        self.bottle.route('/static/<filename>',
+                          method="GET",
+                          callback=self.static_handler)
+        self.bottle.route('/artwork/<filename>',
+                          method="GET",
+                          callback=self.artwork_handler)
 
-    def startServer( self ):
+    def startServer(self):
         # TODO: Remove debug mode when finished
-        self.bottle.run( port=self.port,
-                         debug=True,
-                         server=GeventWebSocketServer )
+        self.bottle.run(port=self.port,
+                        host=self.host,
+                        debug=self.debug,
+                        server=GeventWebSocketServer)
 
     # ##
     # ## begin URL handlers
     # ##
-    def index_handler( self ):
-        return template( 'tpl/index.html' )
+    def index_handler(self):
+        return template('tpl/index.html', vars(self.metadata))
 
-    def websocket_handler( self, ws ):
-        print( ws );
-        self.websockets.add( ws )
-        print( "Connected new web socket, now {} clients".format( 
-                      len( self.websockets ) ) )
+    def websocket_handler(self, ws):
+        print(ws)
+        self.websockets.add(ws)
+        print("Connected new web socket, now {} clients".format(
+            len(self.websockets)))
         while True:
             msg = ws.receive()
             if msg is None:
-                self.websockets.remove( ws )
+                self.websockets.remove(ws)
+                logging.error("web socket closed", msg)
                 break
 
-    def static_handler( self, filename ):
-        return static_file( filename, root='static' )
+            parsed = json.loads(msg)
+            try:
+                command = parsed["command"]
+                playerName = parsed["playerName"]
+            except:
+                logging.error("Can't parse command %s", msg)
+                continue
+
+            if self.controller is not None:
+                try:
+                    self.controller.send_command(command=command,
+                                                 playerName=playerName)
+                except:
+                    logging.error("Failed to send MPRIS command %s to %s",
+                                  command, playerName)
+            else:
+                logging.info(
+                    "No controller connected, ignoring websocket command")
+
+    def static_handler(self, filename):
+        return static_file(filename, root='static')
+
+    def artwork_handler(self, filename):
+        return static_file(self.artworkfile, root='/')
 
     # ##
     # ## end URL handlers
     # ##
 
-    def notify( self, metadata ):
+    def notify(self, metadata):
+        # Create a copy, because we might modify the artUrl
+        metadata = copy.copy(metadata)
         self.metadata = metadata
-        md_json = json.dumps( vars( metadata ) )
+        localfile = None
+
+        if metadata.artUrl is None:
+            metadata.artUrl = "static/unknown.png"
+
+        elif metadata.artUrl.startswith("file://"):
+            localfile = metadata.artUrl[7:]
+        else:
+            url = urllib.parse.urlparse(metadata.artUrl, scheme="file")
+            if url.scheme == "file":
+                localfile = url.path
+
+        if localfile is not None:
+            if os.path.isfile(localfile):
+                self.artworkfile = localfile
+                # use only file part of path name
+                metadata.artUrl = "artwork/" + \
+                    os.path.split(localfile)[1]
+            else:
+                metadata.artUrl = "static/unknown.png"
+
+        md_json = json.dumps(vars(metadata))
         # It's necessary to create a copy as the set might be modified here
+
+        print("start sending")
         for ws in self.websockets.copy():
-            # TO DO:
-            # file:// artUrls to base64 data stream
+
             try:
-                ws.send( md_json )
+                ws.send(md_json)
+                print("Successfully sent")
             except Exception as e:
                 # Web socket might be dead
                 try:
-                    print( "remove ws" + e )
-                    self.websockets.remove( ws )
+                    print("remove ws" + e)
+                    self.websockets.remove(ws)
                 except:
                     pass
 
+    def set_controller(self, controller):
+        self.controller = controller

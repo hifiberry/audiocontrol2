@@ -23,9 +23,9 @@ SOFTWARE.
 
 class PlayerController:
 
-    def __init__( self ):
+    def __init__(self):
         pass
 
-    def send_command( self, command ):
-        pass
-
+    def send_command(self, command, playerName=None):
+        raise RuntimeError("send_command not implemented in %s",
+                           self.__class__.__name__)
