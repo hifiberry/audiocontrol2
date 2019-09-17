@@ -48,8 +48,8 @@ class AudioControlWebserver(MetadataDisplay):
         logging.info("Started web server on port {}".format(self.port))
 
         # TODO: debug code
-        self.metadata = Metadata("Artist", "Title", "Album")
         self.websockets = set()
+        self.notify(Metadata("Artist", "Title", "Album"))
 
     def route(self):
         self.bottle.route('/',
@@ -164,3 +164,6 @@ class AudioControlWebserver(MetadataDisplay):
 
     def set_controller(self, controller):
         self.controller = controller
+
+    def __str__(self):
+        return "webserver@{}".format(self.port)

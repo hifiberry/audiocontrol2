@@ -75,17 +75,25 @@ def parse_config(debugmode=False):
         server = AudioControlWebserver(port=port, debug=debugmode)
         mpris.register_metadata_display(server)
         server.set_controller(mpris)
+        logging.info("Started web server on port %s", port)
     else:
-        logging.error("Won't start web server")
+        logging.error("Web server disabled")
 
     # LastFM/LibreFM
     try:
         scrobbler_network = config.get("scrobbler", "scrobbler-network",
-                                       fallback="lastfm")
-        scrobbler_apikey = config.get("scrobbler", "scrobbler-apikey")
-        scrobbler_apisecret = config.get("scrobbler", "scrobbler-apisecret")
+                                       fallback="lastfm").lower()
         scrobbler_username = config.get("scrobbler", "scrobbler-username")
         scrobbler_password = config.get("scrobbler", "scrobbler-password")
+
+        if scrobbler_network == "lastfm":
+            scrobbler_apikey = "7d2431d8bb5608574b59ea9c7cfe5cbd"
+            scrobbler_apisecret = "4722fea27727367810eb550759fa479f"
+        elif scrobbler_network == "librefm":
+            scrobbler_apikey = "hifiberry"
+            scrobbler_apisecret = "hifiberryos"
+
+        logging.info("Scrobbler %s", scrobbler_network)
 
         if (scrobbler_apikey is not None) and \
             (scrobbler_apisecret is not None) and \
@@ -102,6 +110,7 @@ def parse_config(debugmode=False):
                 logging.info("Scrobbling to %s", scrobbler_network)
             except Exception as e:
                 logging.error(e)
+                logging.error
 
     except Exception as e:
         logging.info("LastFM not configured, won't use it")
@@ -113,8 +122,11 @@ def parse_config(debugmode=False):
 
 def main():
 
+    logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                        level=logging.INFO)
+
     if ('DEBUG' in os.environ):
-        print("Starting in debug mode...")
+        logging.warning("Starting in debug mode...")
         debugmode = True
     else:
         debugmode = False

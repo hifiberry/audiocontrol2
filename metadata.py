@@ -95,7 +95,7 @@ class MetadataDisplay:
         pass
 
     def notify(self, metadata):
-        pass
+        raise RuntimeError("notify not implemented")
 
 
 class MetadataConsole(MetadataDisplay):
@@ -106,6 +106,9 @@ class MetadataConsole(MetadataDisplay):
 
     def notify(self, metadata):
         print("{:16s}: {}".format(metadata.playerName, metadata))
+
+    def __str__(self):
+        return "console"
 
 
 class DummyMetadataCreator(Thread):

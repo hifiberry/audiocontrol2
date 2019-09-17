@@ -90,6 +90,7 @@ class MPRISController (PlayerController):
 
     def metadata_notify(self, metadata):
         for md in self.metadata_displays:
+            logging.debug("metadata_notify: %s %s", md, metadata)
             md.notify(metadata)
 
     def retrievePlayers(self):
@@ -258,7 +259,6 @@ class MPRISController (PlayerController):
                             print(md)
                             print(md_old)
                             self.metadata_notify(md)
-                            print("Sent {}".format(md))
                 else:
                     if p in active_players:
                         active_players.remove(p)
