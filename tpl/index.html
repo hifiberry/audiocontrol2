@@ -27,13 +27,23 @@
  			
  			if (data.hasOwnProperty('artist')){
 				document.getElementById("artist").innerHTML = data.artist
-		  	}
+		  	} else {
+				document.getElementById("artist").innerHTML = "unknown"
+		    }
+		  	
  			if (data.hasOwnProperty('title')){
 				document.getElementById("title").innerHTML = data.title
+		  	} else {
+				document.getElementById("title").innerHTML = "unknown"
 		  	}
+		  	
  			if (data.hasOwnProperty('albumTitle')){
 				document.getElementById("albumTitle").innerHTML = data.albumTitle
+		  	} else {
+				document.getElementById("albumTitle").innerHTML = ""
 		  	}
+		  	
+		  	
 		  	// We use either artData or artUrl with this. artUrl is used for external
 		  	// URLs, artData for covers stored locally
 		  	if (data.hasOwnProperty('artData')) {
