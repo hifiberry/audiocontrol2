@@ -30,15 +30,20 @@ import urllib.parse
 from bottle import Bottle, template, static_file
 from bottle.ext.websocket import GeventWebSocketServer, websocket
 
-from metadata import Metadata, MetadataDisplay
+from metadata import Metadata, MetadataDisplay, MetadataEnrichLastFM
 
 
 class AudioControlWebserver(MetadataDisplay):
 
-    def __init__(self, port=80, host='0.0.0.0', debug=False):
+    def __init__(self,
+                 port=80,
+                 host='0.0.0.0',
+                 debug=False,
+                 useLastFM=True):
         self.port = port
         self.host = host
         self.debug = debug
+        self.useLastFM = useLastFM
         self.bottle = Bottle()
         self.route()
         self.controller = None
@@ -50,6 +55,8 @@ class AudioControlWebserver(MetadataDisplay):
         # TODO: debug code
         self.websockets = set()
         self.notify(Metadata("Artist", "Title", "Album"))
+
+        # Last.FM API to access additional track data
 
     def route(self):
         self.bottle.route('/',
@@ -88,7 +95,7 @@ class AudioControlWebserver(MetadataDisplay):
             msg = ws.receive()
             if msg is None:
                 self.websockets.remove(ws)
-                logging.error("web socket closed", msg)
+                logging.error("web socket closed")
                 break
 
             parsed = json.loads(msg)
@@ -126,6 +133,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.metadata = metadata
         localfile = None
 
+        if self.useLastFM:
+            MetadataEnrichLastFM.enrich(metadata)
+
         if metadata.artUrl is None:
             metadata.artUrl = "static/unknown.png"
 
@@ -148,12 +158,10 @@ class AudioControlWebserver(MetadataDisplay):
         md_json = json.dumps(vars(metadata))
         # It's necessary to create a copy as the set might be modified here
 
-        print("start sending")
         for ws in self.websockets.copy():
 
             try:
                 ws.send(md_json)
-                print("Successfully sent")
             except Exception as e:
                 # Web socket might be dead
                 try:

@@ -28,6 +28,7 @@ from metadata import Metadata
 from controller import PlayerController
 
 PLAYING = "playing"
+PAUSED = "playing"
 
 mpris = None
 
@@ -131,7 +132,7 @@ class MPRISController (PlayerController):
                 artist = None
 
             try:
-                title = str(prop.get("xesam:title"))
+                title = prop.get("xesam:title")
             except:
                 title = None
 
@@ -141,22 +142,22 @@ class MPRISController (PlayerController):
                 albumArtist = None
 
             try:
-                albumTitle = str(prop.get("xesam:album"))
+                albumTitle = prop.get("xesam:album")
             except:
                 albumTitle = None
 
             try:
-                artURL = str(prop.get("mpris:artUrl"))
+                artURL = prop.get("mpris:artUrl")
             except:
                 artURL = None
 
             try:
-                discNumber = str(prop.get("xesam:discNumber"))
+                discNumber = prop.get("xesam:discNumber")
             except:
                 discNumber = None
 
             try:
-                trackNumber = str(prop.get("xesam:trackNumber"))
+                trackNumber = prop.get("xesam:trackNumber")
             except:
                 trackNumber = None
 
@@ -170,7 +171,11 @@ class MPRISController (PlayerController):
             return md
 
         except dbus.exceptions.DBusException as e:
-            logging.debug(e)
+            logging.warning("no mpris data received %s", e)
+            md = Metadata()
+            md.playerName = self.playername(name)
+
+            return md
 
     def mpris_command(self, playername, command):
         if command in mpris_commands:
@@ -227,9 +232,12 @@ class MPRISController (PlayerController):
 
         finished = False
         md = Metadata()
-        active_players = set()
+        active_players = []
+        md_prev = None
+
         while not(finished):
             new_player_started = None
+            metadata_notified = False
 
             for p in self.retrievePlayers():
 
@@ -241,6 +249,7 @@ class MPRISController (PlayerController):
                 except:
                     logging.info("Got no state from " + p)
                     state = "unknown"
+
                 self.state_table[p].state = state
 
                 # Check if playback started on a player that wasn't
@@ -248,20 +257,41 @@ class MPRISController (PlayerController):
                 if state == PLAYING:
                     if (p not in active_players):
                         new_player_started = p
-                        active_players.add(p)
+                        active_players.insert(0, p)
 
-                    md_old = self.state_table[p].metadata
                     md = self.retrieveMeta(p)
+                    md.playerState = state
 
                     self.state_table[p].metadata = md
-                    if md is not None:
-                        if md != md_old:
-                            print(md)
-                            print(md_old)
-                            self.metadata_notify(md)
+                    if md != md_prev:
+                        self.metadata_notify(md)
+
+                    md_prev = md
+
+                    # Even if we din't send metadata, this is still
+                    # flagged
+                    metadata_notified = True
                 else:
-                    if p in active_players:
-                        active_players.remove(p)
+                    # always keep one player in the active_players
+                    # list
+                    if len(active_players) > 1:
+                        if p in active_players:
+                            active_players.remove(p)
+
+            # There might be no active player, but one that is paused
+            # or stopped
+            if not metadata_notified and len(active_players) > 0:
+                p = active_players[0]
+                logging.info(
+                    "no active player playing, selecting the first one: %s",
+                    p)
+                md = self.retrieveMeta(p)
+                md.playerState = self.state_table[p].state
+                if md != md_prev:
+                    self.metadata_notify(md)
+                    md_prev = md
+
+                md_prev = md
 
             if new_player_started is not None:
                 if self.auto_pause:

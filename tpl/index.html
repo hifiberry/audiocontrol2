@@ -11,11 +11,12 @@
     <!-- Material font -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 
-    <title>{{get('playerName', 'unknown')}}</title>
+    <title>{{get('playerName', 'unknown')}}/{{get('playerState', 'unknown')}}</title>
     
 	<script>
 	  var state = "unknown";
 	  var playerName = "{{get('playerName', 'unknown')}}";
+	  var playerState = "{{get('playerState', 'unknown')}}";
 	  
 	  var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
 	  var address = protocol + window.location.host + window.location.pathname + 'websocket';
@@ -44,9 +45,28 @@
 		  	
 		  	if (data.hasOwnProperty('playerName')) {
 		  		playerName = data["playerName"];
-		  		document.title = playerName;
+		  	}
+
+			if (data.hasOwnProperty('playerState')) {
+				if (playerState != data["playerState"]) {
+		  			playerState = data["playerState"];
+		  			if (playerState == "playing") {
+		  				playing()
+		  			} else if (playerState == "paused") {
+		  			    paused()
+		  			} else if (playerState == "stopped") {
+		  			    paused()
+		  			} else if (playerState == "unknown") {
+		  			    paused()
+		  			} else {
+		  			  Console.log("State ",playerState, " unknown");
+		  			}
+		  			 
+		  		}
 		  	}
 		  	
+		  	document.title = playerName.concat("/",playerState);
+					  	
         };
   	  console.log('Web Socket enabled.');
 	  })();
@@ -69,14 +89,12 @@
       
       function play() {
         sendCommand("Play");
-        playing();
-        state="playing";
+        playing();   
       }
 
       function pause() {
         sendCommand("Pause");
         paused();
-        state="paused";
       }
       
       function next() {
@@ -89,10 +107,12 @@
       
       function playing() {
       	document.getElementById("playpause").src="static/ic_pause_24px.svg"; // Pause symbol 
+      	state="playing";
       }
       
       function paused() {
-      	document.getElementById("playpause").src="static/ic_play_arrow_24px.svg"; // Play symbol 
+      	document.getElementById("playpause").src="static/ic_play_arrow_24px.svg"; // Play symbol
+      	state="paused";
       }      
 
    </script>

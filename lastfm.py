@@ -69,8 +69,8 @@ class LastFM(MetadataDisplay):
         if listening_time > 30:
             md = self.current_metadata
         else:
-            logging.info("not logging %s, not listened for at least 30s",
-                         metadata)
+            logging.debug("not yes logging %s, not listened for at least 30s",
+                          metadata)
             md = None
 
         self.starttime = now

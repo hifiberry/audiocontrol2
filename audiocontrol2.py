@@ -21,10 +21,10 @@ SOFTWARE.
 '''
 
 import signal
-
 import configparser
 import logging
 import os
+import sys
 
 from mpris import MPRISController
 from metadata import MetadataConsole, DummyMetadataCreator
@@ -122,8 +122,14 @@ def parse_config(debugmode=False):
 
 def main():
 
-    logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
-                        level=logging.INFO)
+    if len(sys.argv) > 1:
+        if "-v" in sys.argv:
+            logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                                level=logging.DEBUG)
+            logging.debug("enabled verbose logging")
+    else:
+        logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+                            level=logging.INFO)
 
     if ('DEBUG' in os.environ):
         logging.warning("Starting in debug mode...")

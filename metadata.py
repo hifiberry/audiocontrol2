@@ -22,6 +22,12 @@ SOFTWARE.
 
 from threading import Thread
 from time import time, sleep
+import logging
+import urllib.request
+import urllib.parse
+import json
+
+from expiringdict import ExpiringDict
 
 
 class Metadata:
@@ -33,7 +39,7 @@ class Metadata:
                  albumArtist=None, albumTitle=None,
                  artUrl=None,
                  discNumber=None, trackNumber=None,
-                 playerName=None):
+                 playerName=None, playerState="unknown"):
         self.artist = artist
         self.title = title
         self.albumArtist = albumArtist
@@ -42,12 +48,14 @@ class Metadata:
         self.discNumber = discNumber
         self.tracknumber = trackNumber
         self.playerName = playerName
+        self.playerState = playerState
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
             return NotImplemented
 
-        return self.artist == other.artist and self.title == other.title
+        return self.artist == other.artist and \
+            self.title == other.title
 
     def sameArtwork(self, other):
         if not isinstance(other, Metadata):
@@ -62,7 +70,9 @@ class Metadata:
         return self.artist == other.artist and \
             self.title == other.title and \
             self.artUrl == other.artUrl and \
-            self.albumTitle == other.albumTitle
+            self.albumTitle == other.albumTitle and \
+            self.playerName == other.playerName and \
+            self.playerState == other.playerState
 
     def __ne__(self, other):
         if not isinstance(other, Metadata):
@@ -75,14 +85,19 @@ class Metadata:
         Cleanup metadata for known problems
         """
 
-        # unknown artist, but artist - title in title
-        # seen on mpd web radio streams
+        # MPD web radio stations use different schemes to encode
+        # artist and title into a title string
+        # we try to guess here what's used
         if (self.playerName == "mpd") and \
-            (self.artist == "unknown artist") and \
-                (" - " in self.title):
-            [artist, title] = self.title.split(" - ", 1)
-            self.artist = artist
-            self.title = title
+                (self.artist == "unknown artist"):
+            if (" - " in self.title):
+                [artist, title] = self.title.split(" - ", 1)
+                self.artist = artist
+                self.title = title
+            if (", " in self.title):
+                [title, artist] = self.title.split(", ", 1)
+                self.artist = artist
+                self.title = title
 
     def __str__(self):
         return "{}: {} ({}) {}".format(self.artist, self.title,
@@ -128,31 +143,117 @@ class DummyMetadataCreator(Thread):
 
         covers = ["https://images-na.ssl-images-amazon.com/images/I/81R6Jcf5eoL._SL1500_.jpg",
                   "https://townsquare.media/site/443/files/2013/03/92rage.jpg?w=980&q=75",
-                  "https://i0.wp.com/neu.rage-cover-cologne.de/wp-content/uploads/2017/12/rage-against-the-machine-ca8389d26e931c5e.jpg",
-                  "https://www.rollingstone.de/wp-content/uploads/2019/04/23/11/rammstein-artwork.jpg",
-                  "https://www.rammstein.de/wp-content/uploads/2010/03/5373042_sehnsucht_aec.jpg",
-                  "http://1t8r984d8wic2jedckksuin1.wpengine.netdna-cdn.com/wp-content/uploads/2016/03/093624642428-1024x1024.jpg",
-                  "https://streamd.hitparade.ch/cdimages/pippo_pollina-elementare_watson_a.jpg",
-                  "https://media05.myheimat.de/2012/10/05/2342415_orig.jpg",
-                  "file://static/unknown.png",
-                  "file://static/unknown.png",
-                  "file://static/unknown.png",
-                  "file://static/unknown.png",
-                  "file://static/unknown.png",
+                  "file://unknown.png",
+                  None,
+                  None,
+                  None,
+                  None
                   ]
+        songs = [
+            ["Madonna", "Like a Virgin"],
+            ["Rammstein", "Mutter"],
+            ["Iggy Pop", "James Bond"],
+            ["Porcupine Tree", "Normal"],
+            ["Clinton Shorter", "Truth"],
+            ["Bruce Springsteen", "The River"],
+            ["Plan B", "Kidz"],
+            ["The Spooks", "Things I've seen"],
+        ]
+
+        states = ["playing", "paused", "stopped"]
 
         while not(self.stop):
-            rnd = random.randrange(100000)
 
             coverindex = random.randrange(len(covers))
+            songindex = random.randrange(len(songs))
+            stateindex = random.randrange(len(states))
 
-            md = Metadata(artist="Artist {}".format(rnd),
-                          title="Title {}".format(rnd),
-                          albumTitle="Album {}".format(rnd),
+            md = Metadata(artist=songs[songindex][0],
+                          title=songs[songindex][1],
                           artUrl=covers[coverindex],
-                          playerName="dummy")
+                          playerName="dummy",
+                          playerState=states[stateindex])
             self.display.notify(md)
             sleep(self.interval)
 
     def stop(self):
         self.stop = True
+
+
+class MetadataEnrichLastFM():
+
+    lastfmcache = ExpiringDict(max_len=100,
+                               max_age_seconds=100000)
+    negativeCache = ExpiringDict(max_len=100,
+                                 max_age_seconds=600)
+
+    urltemplate = "http://ws.audioscrobbler.com/2.0/?" \
+        "method=track.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
+        "&artist={}&track={}&format=json"
+
+    @classmethod
+    def enrich(cls, metadata):
+        logging.info("enrich")
+
+        trackdata = None
+
+        # Get last.FM data online or from cache
+        if metadata.artist is not None and \
+                metadata.title is not None:
+
+            key = "track/{}/{}".format(metadata.artist, metadata.title)
+            trackdata = cls.lastfmcache.get(key)
+
+            if trackdata is not None:
+                logging.debug("Found cached entry for %s", key)
+            else:
+                try:
+                    if cls.negativeCache.get(key) is None:
+                        url = cls.urltemplate.format(urllib.parse.quote(metadata.artist),
+                                                     urllib.parse.quote(metadata.title))
+                        with urllib.request.urlopen(url) as connection:
+                            trackdata = json.loads(connection.read().decode())
+                        cls.lastfmcache[key] = trackdata
+                except Exception as e:
+                    logging.warning("Last.FM exception %s", e)
+                    cls.negativeCache[key] = True
+
+        if trackdata is not None:
+
+            if metadata.artUrl is None:
+                metadata.artUrl = cls.bestImage(trackdata)
+                if metadata.artUrl is not None:
+                    logging.info("got cover for %s/%s from Last.FM",
+                                 metadata.artist,
+                                 metadata.title)
+                else:
+                    logging.info("no cover for %s/%s on Last.FM",
+                                 metadata.artist,
+                                 metadata.title)
+
+            else:
+                logging.debug("Not updating artUrl as it exists for %s: %s %s",
+                              key, metadata.artUrl, type(metadata.artUrl))
+
+        else:
+            logging.info("no track data for %s/%s on Last.FM",
+                         metadata.artist,
+                         metadata.title)
+
+    @classmethod
+    def bestImage(cls, lastfmdata):
+        try:
+            urls = lastfmdata["track"]["album"]["image"]
+            res = {}
+            for u in urls:
+                res[u["size"]] = u["#text"]
+
+            for size in ["extralarge", "large", "medium", "small"]:
+                if size in res:
+                    logging.debug("found image size %s", size)
+                    return res[size]
+
+            return None
+
+        except Exception as e:
+            logging.warning("%s", e)
