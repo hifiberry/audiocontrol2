@@ -26,7 +26,7 @@
  			var data = JSON.parse(event.data);
  			
  			if (data.hasOwnProperty('artist')){
-				document.getElementById("artist").innerHTML = data.artist
+				document.getElementById("artist").innerHTML = data.artist.concat(": &nbsp;")
 		  	} else {
 				document.getElementById("artist").innerHTML = "unknown"
 		    }
@@ -141,8 +141,7 @@
     <div class="container" style="height: 100vh">
 
 		<div class="row artistrow">
-		<div id="artist">{{get('artist', 'unknown')}}</div>
-		<div>/</div>
+		<div id="artist">{{get('artist', 'unknown')}}: &nbsp;</div>
 		<div id="title">{{get('title', 'unknown')}}</div>
 		</div>
 	
