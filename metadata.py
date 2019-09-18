@@ -193,7 +193,7 @@ class MetadataEnrichLastFM():
 
     @classmethod
     def enrich(cls, metadata):
-        logging.info("enrich")
+        logging.debug("enriching metadata")
 
         trackdata = None
 
@@ -255,5 +255,5 @@ class MetadataEnrichLastFM():
 
             return None
 
-        except Exception as e:
-            logging.warning("%s", e)
+        except KeyError:
+            pass

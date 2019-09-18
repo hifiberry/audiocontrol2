@@ -296,7 +296,8 @@ class MPRISController (PlayerController):
             if new_player_started is not None:
                 if self.auto_pause:
                     logging.info(
-                        "new player started, pausing other active players")
+                        "new player %s started, pausing other active players",
+                        self.playername(active_players[0]))
                     self.pause_inactive(new_player_started)
                 else:
                     logging.debug("auto-pause disabled")
