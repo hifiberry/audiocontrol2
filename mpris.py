@@ -282,7 +282,7 @@ class MPRISController (PlayerController):
             # or stopped
             if not metadata_notified and len(active_players) > 0:
                 p = active_players[0]
-                logging.info(
+                logging.debug(
                     "no active player playing, selecting the first one: %s",
                     p)
                 md = self.retrieveMeta(p)
