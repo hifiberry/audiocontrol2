@@ -27,7 +27,7 @@ import os
 import copy
 import urllib.parse
 
-from bottle import Bottle, template, static_file
+from bottle import Bottle, template, static_file, response
 from bottle.ext.websocket import GeventWebSocketServer, websocket
 
 from metadata import Metadata, MetadataDisplay, MetadataEnrichLastFM
@@ -72,6 +72,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/artwork/<filename>',
                           method="GET",
                           callback=self.artwork_handler)
+        self.bottle.route('/playerstatus',
+                          method="GET",
+                          callback=self.status_handler)
 
     def startServer(self):
         # TODO: Remove debug mode when finished
@@ -85,6 +88,13 @@ class AudioControlWebserver(MetadataDisplay):
     # ##
     def index_handler(self):
         return template('tpl/index.html', vars(self.metadata))
+
+    def status_handler(self):
+        response.content_type = 'text/plain; charset=UTF8'
+        if self.controller is not None:
+            return "Status\n\n{}".format(self.controller)
+        else:
+            return "Not connectedt to a controller"
 
     def websocket_handler(self, ws):
         print(ws)
