@@ -23,6 +23,7 @@ SOFTWARE.
 import dbus
 import time
 import logging
+import datetime
 
 from metadata import Metadata
 from controller import PlayerController
@@ -85,6 +86,7 @@ class MPRISController (PlayerController):
         self.bus = dbus.SystemBus()
         self.auto_pause = auto_pause
         self.metadata_displays = []
+        self.last_update = None
 
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
@@ -302,7 +304,9 @@ class MPRISController (PlayerController):
                 else:
                     logging.debug("auto-pause disabled")
 
-            time.sleep(0.2)
+            self.last_update = datetime.datetime.now()
+
+            time.sleep(0.5)
 
     def __str__(self):
         """
@@ -316,5 +320,7 @@ class MPRISController (PlayerController):
                 self.state_table[p].state,
                 self.state_table[p].metadata.artist,
                 self.state_table[p].metadata.title)
+
+        res = res + "\nLast updated {}\n".format(self.last_update)
 
         return res
