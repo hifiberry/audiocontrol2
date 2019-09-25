@@ -120,10 +120,11 @@ def parse_config(debugmode=False):
                 if not(anon):
                     mpris.register_metadata_display(lastfm)
                     logging.info("Scrobbling to %s", network)
+                    metadata.lastfmuser = username
+
                 if server is not None:
                     server.set_lastfm(lastfm)
 
-                metadata.set_lastfm(lastfm.network)
             except Exception as e:
                 logging.error(e)
 

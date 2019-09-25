@@ -23,17 +23,13 @@ SOFTWARE.
 from threading import Thread
 from time import sleep
 import logging
-from helpers import array_to_string
-
-import pylast
-
-
-mylastfm = None
+from expiringdict import ExpiringDict
+import json
+from urllib.parse import quote
+from urllib.request import urlopen
 
 
-def set_lastfm(network):
-    global mylastfm
-    mylastfm = network
+lastfmuser = None
 
 
 class Metadata:
@@ -58,6 +54,7 @@ class Metadata:
         self.playCount = None
         self.mbid = None
         self.loved = None
+        self.wiki = None
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
@@ -194,59 +191,97 @@ def enrich_metadata(metadata):
     enrich_metadata_from_lastfm(metadata)
 
 
+lastfmcache = ExpiringDict(max_len=100,
+                           max_age_seconds=600)
+negativeCache = ExpiringDict(max_len=100,
+                             max_age_seconds=600)
+
+urltemplate = "http://ws.audioscrobbler.com/2.0/?" \
+    "method=track.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
+    "&artist={}&track={}&format=json{}"
+
+
 def enrich_metadata_from_lastfm(metadata):
-    if mylastfm is None:
-        return None
+    logging.debug("enriching metadata")
 
-    logging.debug("enriching metadata using Last.FM")
+    userparam = ""
+    if lastfmuser is not None:
+        userparam = "&user={}".format(quote(lastfmuser))
 
-    track = None
+    trackdata = None
 
     # Get last.FM data online or from cache
     if metadata.artist is not None and \
             metadata.title is not None:
 
-        track = mylastfm.get_track(metadata.artist, metadata.title)
-        track.username = mylastfm.username
+        key = "track/{}/{}".format(metadata.artist, metadata.title)
+        trackdata = lastfmcache.get(key)
 
-    try:
-        album = track.get_album()
-    except pylast.WSError:
+        if trackdata is not None:
+            logging.debug("Found cached entry for %s", key)
+        else:
+            try:
+                if negativeCache.get(key) is None:
+                    url = urltemplate.format(quote(metadata.artist),
+                                             quote(metadata.title),
+                                             userparam)
+                    with urlopen(url) as connection:
+                        trackdata = json.loads(connection.read().decode())
+                    lastfmcache[key] = trackdata
+            except Exception as e:
+                logging.warning("Last.FM exception %s", e)
+                negativeCache[key] = True
+
+    if trackdata is not None and "track" in trackdata:
+
+        trackdata = trackdata["track"]
+
+        if metadata.artUrl is None:
+            metadata.artUrl = bestImage(trackdata)
+            if metadata.artUrl is not None:
+                logging.info("got cover for %s/%s from Last.FM",
+                             metadata.artist,
+                             metadata.title)
+            else:
+                logging.info("no cover for %s/%s on Last.FM",
+                             metadata.artist,
+                             metadata.title)
+
+        else:
+            logging.debug("Not updating artUrl as it exists for %s: %s %s",
+                          key, metadata.artUrl, type(metadata.artUrl))
+
+        if metadata.playCount is None and "userplaycount" in trackdata:
+            metadata.playCount = trackdata["userplaycount"]
+
+        if metadata.mbid is None and "mbid" in trackdata:
+            metadata.mbid = trackdata["mbid"]
+
+        if metadata.loved is None and "userloved" in trackdata:
+            metadata.loved = (int(trackdata["userloved"]) > 0)
+
+        if metadata.wiki is None and "wiki" in trackdata:
+            metadata.wiki = trackdata["wiki"]
+
+    else:
         logging.info("no track data for %s/%s on Last.FM",
                      metadata.artist,
                      metadata.title)
-        return
 
-    if metadata.artUrl is None:
-        if album is not None:
-            url = metadata.artUrl = album.get_cover_image()
-        else:
-            url = track.get_cover_image()
 
-        if url is not None:
-            metadata.artUrl = url
-            logging.info("got cover for %s/%s from Last.FM",
-                         metadata.artist,
-                         metadata.title)
-        else:
-            logging.info("no cover for %s/%s on Last.FM",
-                         metadata.artist,
-                         metadata.title)
-    else:
-        logging.debug("Not updating artUrl as it exists for %s/%s (%s)",
-                      metadata.artist, metadata.title, metadata.artUrl)
+def bestImage(lastfmdata):
+    try:
+        urls = lastfmdata["album"]["image"]
+        res = {}
+        for u in urls:
+            res[u["size"]] = u["#text"]
 
-    if metadata.albumTitle is None or \
-            metadata.albumTitle.lower() == "unknown":
-        if album is not None:
-            metadata.albumTitle = album.title
-            metadata.albumArtist = array_to_string(album.artist)
+        for size in ["extralarge", "large", "medium", "small"]:
+            if size in res:
+                logging.debug("found image size %s", size)
+                return res[size]
 
-    if metadata.playCount is None:
-        metadata.playCount = track.get_userplaycount()
+        return None
 
-    if metadata.mbid is None:
-        metadata.mbid = track.get_mbid()
-
-    if metadata.loved is None:
-        metadata.loved = track.get_userloved()
+    except KeyError:
+        pass
