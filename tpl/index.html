@@ -25,6 +25,8 @@
  		socket.onmessage = function(msg) {
  			var data = JSON.parse(event.data);
  			
+ 			console.log(data);
+ 			
  			if (data.hasOwnProperty('artist')){
 				document.getElementById("artist").innerHTML = data.artist.concat(": &nbsp;")
 		  	} else {
@@ -43,6 +45,9 @@
 				document.getElementById("albumTitle").innerHTML = ""
 		  	}
 		  	
+ 			if (data.hasOwnProperty('loved')){
+ 				console.log(data.loved)  // not yet used
+		  	}
 		  	
 		  	// We use either artData or artUrl with this. artUrl is used for external
 		  	// URLs, artData for covers stored locally
@@ -69,7 +74,7 @@
 		  			} else if (playerState == "unknown") {
 		  			    paused()
 		  			} else {
-		  			  Console.log("State ",playerState, " unknown");
+		  			  console.log("State ",playerState, " unknown");
 		  			}
 		  			 
 		  		}
@@ -155,9 +160,10 @@
 		</div>
 		
 	    <div class="row navrow" >
-			    <img id="prev" class="h-100 img-fluid" src="static/ic_skip_previous_24px.svg" onClick="previous();">
-			    <img id="playpause" class="h-100 img-fluid" src="static/ic_play_arrow_24px.svg" onClick="playPause();">
-			    <img id="next" class="h-100 img-fluid" src="static/ic_skip_next_24px.svg" onClick="next();">
+			    <img id="prev" class="h-100 img-fluid" src="static/skip_previous-24px.svg" onClick="previous();">
+			    <img id="playpause" class="h-100 img-fluid" src="static/play_arrow-24px.svg" onClick="playPause();">
+			    <img id="next" class="h-100 img-fluid" src="static/skip_next-24px.svg" onClick="next();">
+			    <!-- <img id="favorite" class="h-100 img-fluid" src="static/favorite_border-24px.svg" onClick="next();"> -->
 		</div>
 		
 	<div>	
