@@ -30,7 +30,7 @@ import urllib.parse
 from bottle import Bottle, template, static_file, response
 from bottle.ext.websocket import GeventWebSocketServer, websocket
 
-from metadata import Metadata, MetadataDisplay, MetadataEnrichLastFM
+from metadata import Metadata, MetadataDisplay, enrich_metadata
 
 
 class AudioControlWebserver(MetadataDisplay):
@@ -38,15 +38,14 @@ class AudioControlWebserver(MetadataDisplay):
     def __init__(self,
                  port=80,
                  host='0.0.0.0',
-                 debug=False,
-                 useLastFM=True):
+                 debug=False):
         self.port = port
         self.host = host
         self.debug = debug
-        self.useLastFM = useLastFM
         self.bottle = Bottle()
         self.route()
         self.controller = None
+        self.lastfm = None
         thread = threading.Thread(target=self.startServer, args=())
         thread.daemon = True
         thread.start()
@@ -116,6 +115,10 @@ class AudioControlWebserver(MetadataDisplay):
                 logging.error("Can't parse command %s", msg)
                 continue
 
+            if command == "love":
+                logging.info("Sending love to Last.FM")
+                break
+
             if self.controller is not None:
                 try:
                     self.controller.send_command(command=command,
@@ -143,8 +146,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.metadata = metadata
         localfile = None
 
-        if self.useLastFM:
-            MetadataEnrichLastFM.enrich(metadata)
+        enrich_metadata(metadata)
 
         if metadata.artUrl is None:
             metadata.artUrl = "static/unknown.png"
@@ -182,6 +184,9 @@ class AudioControlWebserver(MetadataDisplay):
 
     def set_controller(self, controller):
         self.controller = controller
+
+    def set_lastfm(self, lastfm):
+        self.lastfm = lastfm
 
     def __str__(self):
         return "webserver@{}".format(self.port)
