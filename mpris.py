@@ -27,6 +27,8 @@ import datetime
 
 from metadata import Metadata
 from controller import PlayerController
+import watchdog
+from helpers import array_to_string
 
 PLAYING = "playing"
 PAUSED = "playing"
@@ -47,26 +49,14 @@ mpris_commands = [MPRIS_NEXT, MPRIS_PREV,
                   MPRIS_STOP, MPRIS_PLAY]
 
 
-def array_to_string(arr):
-    """
-    Converts an array of objects to a comma separated string
-    """
-    res = ""
-    for part in arr:
-        res = res + part + ", "
-    if len(res) > 1:
-        return res[:-2]
-    else:
-        return ""
-
-
 class PlayerState:
     """
     Internal representation of the state of a player
     """
 
-    def __init__(self, state="unknown", metadata=None):
+    def __init__(self, state="unknown", metadata=None, failed=0):
         self.state = state
+        self.failed = failed
         if metadata is not None:
             self.metadata = metadata
         else:
@@ -236,6 +226,7 @@ class MPRISController (PlayerController):
         md = Metadata()
         active_players = []
         md_prev = None
+        MAX_FAIL = 3
 
         while not(finished):
             new_player_started = None
@@ -248,9 +239,18 @@ class MPRISController (PlayerController):
 
                 try:
                     state = self.retrieveState(p).lower()
+                    self.state_table[p].failed = 0
                 except:
                     logging.info("Got no state from " + p)
                     state = "unknown"
+                    self.state_table[p].failed = \
+                        self.state_table[p].failed + 1
+                    if self.state_table[p].failed >= MAX_FAIL:
+                        playername = self.playername(p)
+                        logging.warning(
+                            "%s failed, trying to restart", playername)
+                        watchdog.restart_service(playername)
+                        self.state_table[p].failed = 0
 
                 self.state_table[p].state = state
 
