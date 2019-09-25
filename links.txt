@@ -2,4 +2,5 @@ Media player symbols in Unicode
 https://en.wikipedia.org/wiki/Media_control_symbols
 
 Material design icons
+https://material.io/resources/icons/?icon=play_arrow&style=baseline
 https://github.com/google/material-design-icons
