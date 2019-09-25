@@ -27,9 +27,11 @@ import os
 import sys
 
 from mpris import MPRISController
+import metadata
 from metadata import MetadataConsole, DummyMetadataCreator
 from lastfm import LastFM
 from webserver import AudioControlWebserver
+import watchdog
 
 mpris = MPRISController()
 
@@ -51,6 +53,8 @@ def print_state(signalNumber=None, frame=None):
 
 
 def parse_config(debugmode=False):
+    server = None
+
     config = configparser.ConfigParser()
     config.read('/etc/audiocontrol2.conf')
 
@@ -80,40 +84,59 @@ def parse_config(debugmode=False):
         logging.error("Web server disabled")
 
     # LastFM/LibreFM
-    try:
-        scrobbler_network = config.get("scrobbler", "scrobbler-network",
-                                       fallback="lastfm").lower()
-        scrobbler_username = config.get("scrobbler", "scrobbler-username")
-        scrobbler_password = config.get("scrobbler", "scrobbler-password")
+    if "lastfm" in config.sections():
+        network = config.get("lastfm", "network",
+                             fallback="lastfm").lower()
+        username = config.get("lastfm", "username",
+                              fallback=None)
+        password = config.get("lastfm", "password",
+                              fallback=None)
 
-        if scrobbler_network == "lastfm":
-            scrobbler_apikey = "7d2431d8bb5608574b59ea9c7cfe5cbd"
-            scrobbler_apisecret = "4722fea27727367810eb550759fa479f"
-        elif scrobbler_network == "librefm":
-            scrobbler_apikey = "hifiberry"
-            scrobbler_apisecret = "hifiberryos"
+        if network == "lastfm":
+            apikey = "7d2431d8bb5608574b59ea9c7cfe5cbd"
+            apisecret = "4722fea27727367810eb550759fa479f"
+        elif network == "librefm":
+            apikey = "hifiberry"
+            apisecret = "hifiberryos"
 
-        logging.info("Scrobbler %s", scrobbler_network)
+        logging.info("Last.FM network %s", network)
 
-        if (scrobbler_apikey is not None) and \
-            (scrobbler_apisecret is not None) and \
-            (scrobbler_apisecret is not None) and \
-                (scrobbler_password is not None):
+        if network is not None:
+            anon = False
+            if username is None or \
+                    password is None:
+                logging.info("Using %s anonymously", network)
+                username = None
+                password = None
+                anon = True
             try:
-                lastfm = LastFM(scrobbler_apikey,
-                                scrobbler_apisecret,
-                                scrobbler_username,
-                                scrobbler_password,
+                lastfm = LastFM(apikey,
+                                apisecret,
+                                username,
+                                password,
                                 None,
-                                scrobbler_network)
-                mpris.register_metadata_display(lastfm)
-                logging.info("Scrobbling to %s", scrobbler_network)
+                                network)
+                lastfm.network.enable_caching()
+                if not(anon):
+                    mpris.register_metadata_display(lastfm)
+                    logging.info("Scrobbling to %s", network)
+                if server is not None:
+                    server.set_lastfm(lastfm)
+
+                metadata.set_lastfm(lastfm.network)
             except Exception as e:
                 logging.error(e)
-                logging.error
 
-    except Exception as e:
-        logging.info("LastFM not configured, won't use it")
+    else:
+        logging.info("Last.FM not configured")
+
+    # Watchdog
+    if "watchdog" in config.sections():
+        for player in config["watchdog"]:
+            services = config["watchdog"][player].split(",")
+            watchdog.player_mapping[player] = services
+            logging.info("configuring watchdog %s: %s",
+                         player, services)
 
     if debugmode:
         dummy = DummyMetadataCreator(server, interval=3)
