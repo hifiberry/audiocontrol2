@@ -16,7 +16,15 @@
 	<script>
 	  var state = "unknown";
 	  var playerName = "{{get('playerName', 'unknown')}}";
-	  var playerState = "{{get('playerState', 'unknown')}}";
+	  var playerState = "unknown"
+	  var favorite = false;
+	  
+	  var fav_enabled = {{get('support_favorites', "")}};
+	  document.addEventListener("DOMContentLoaded", function(){
+ 	    		if (! fav_enabled) {
+	  	  		document.getElementById("favorite").style.display = "none";
+	  		}
+	  });
 	  
 	  var protocol = window.location.protocol === 'http:' ? 'ws://' : 'wss://';
 	  var address = protocol + window.location.host + window.location.pathname + 'websocket';
@@ -45,9 +53,15 @@
 				document.getElementById("albumTitle").innerHTML = ""
 		  	}
 		  	
- 			if (data.hasOwnProperty('loved')){
- 				console.log(data.loved)  // not yet used
+		  	
+		  	// favorite status
+ 			if (data.hasOwnProperty('loved') && data.loved) {
+ 				favorite = true;
+		  	} else {
+ 				favorite = false;
 		  	}
+		  	update_fav();
+		  	
 		  	
 		  	// We use either artData or artUrl with this. artUrl is used for external
 		  	// URLs, artData for covers stored locally
@@ -120,15 +134,37 @@
         sendCommand("Previous");
       }
       
+      function previous() {
+        sendCommand("Previous");
+      }
+      
       function playing() {
-      	document.getElementById("playpause").src="static/ic_pause_24px.svg"; // Pause symbol 
+      	document.getElementById("playpause").src="static/pause-24px.svg"; // Pause symbol 
       	state="playing";
       }
       
       function paused() {
-      	document.getElementById("playpause").src="static/ic_play_arrow_24px.svg"; // Play symbol
+      	document.getElementById("playpause").src="static/play_arrow-24px.svg"; // Play symbol
       	state="paused";
-      }      
+      }
+      
+      function update_fav() {
+        if (favorite) {
+ 			document.getElementById("favorite").src = "static/favorite-24px.svg";
+		} else {
+ 			document.getElementById("favorite").src = "static/favorite_border-24px.svg";
+ 		}
+      }
+      
+      function toggle_favorite() {
+        favorite = !(favorite)
+        if (favorite) {
+          sendCommand("love");
+        } else {
+          sendCommand("unlove");
+        }
+        update_fav()
+      } 
 
    </script>
    
@@ -163,7 +199,7 @@
 			    <img id="prev" class="h-100 img-fluid" src="static/skip_previous-24px.svg" onClick="previous();">
 			    <img id="playpause" class="h-100 img-fluid" src="static/play_arrow-24px.svg" onClick="playPause();">
 			    <img id="next" class="h-100 img-fluid" src="static/skip_next-24px.svg" onClick="next();">
-			    <!-- <img id="favorite" class="h-100 img-fluid" src="static/favorite_border-24px.svg" onClick="next();"> -->
+			    <img id="favorite" class="h-100 img-fluid" src="static/favorite_border-24px.svg" onClick="toggle_favorite()";">
 		</div>
 		
 	<div>	

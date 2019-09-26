@@ -29,9 +29,10 @@ import sys
 from mpris import MPRISController
 import metadata
 from metadata import MetadataConsole, DummyMetadataCreator
-from lastfm import LastFM
+from lastfm import LastFMDisplay
 from webserver import AudioControlWebserver
 import watchdog
+from _collections import OrderedDict
 
 mpris = MPRISController()
 
@@ -56,6 +57,11 @@ def parse_config(debugmode=False):
     server = None
 
     config = configparser.ConfigParser()
+    config.optionxform = lambda option: option
+
+#    config = configparser.RawConfigParser()
+#    config.optionxform = lambda option: option
+
     config.read('/etc/audiocontrol2.conf')
 
     # Auto pause for mpris players
@@ -83,7 +89,7 @@ def parse_config(debugmode=False):
     else:
         logging.error("Web server disabled")
 
-    # LastFM/LibreFM
+    # LastFMDisplay/LibreFM
     if "lastfm" in config.sections():
         network = config.get("lastfm", "network",
                              fallback="lastfm").lower()
@@ -110,20 +116,20 @@ def parse_config(debugmode=False):
                 password = None
                 anon = True
             try:
-                lastfm = LastFM(apikey,
-                                apisecret,
-                                username,
-                                password,
-                                None,
-                                network)
-                lastfm.network.enable_caching()
+                lastfmdisplay = LastFMDisplay(apikey,
+                                              apisecret,
+                                              username,
+                                              password,
+                                              None,
+                                              network)
+                lastfmdisplay.network.enable_caching()
                 if not(anon):
-                    mpris.register_metadata_display(lastfm)
+                    mpris.register_metadata_display(lastfmdisplay)
                     logging.info("Scrobbling to %s", network)
                     metadata.lastfmuser = username
 
                 if server is not None:
-                    server.set_lastfm(lastfm)
+                    server.set_lastfm_network(lastfmdisplay.network)
 
             except Exception as e:
                 logging.error(e)
@@ -138,6 +144,14 @@ def parse_config(debugmode=False):
             watchdog.player_mapping[player] = services
             logging.info("configuring watchdog %s: %s",
                          player, services)
+
+    # Radio
+    if server is not None and "radio" in config.sections():
+        stations = OrderedDict()
+        for station in config["radio"]:
+            url = config["radio"][station]
+            stations[station] = url
+        server.set_radio_stations(stations)
 
     if debugmode:
         dummy = DummyMetadataCreator(server, interval=3)

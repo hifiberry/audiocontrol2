@@ -27,7 +27,7 @@ import os
 import copy
 import urllib.parse
 
-from bottle import Bottle, template, static_file, response
+from bottle import Bottle, template, static_file, request, response
 from bottle.ext.websocket import GeventWebSocketServer, websocket
 
 from metadata import Metadata, MetadataDisplay, enrich_metadata
@@ -45,7 +45,8 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle = Bottle()
         self.route()
         self.controller = None
-        self.lastfm = None
+        self.lastfm_network = None
+        self.radio_stations = None
         thread = threading.Thread(target=self.startServer, args=())
         thread.daemon = True
         thread.start()
@@ -61,6 +62,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/',
                           method="GET",
                           callback=self.index_handler)
+        self.bottle.route('/radio',
+                          method="GET",
+                          callback=self.radio_handler)
         self.bottle.route('/websocket',
                           method="GET",
                           callback=self.websocket_handler,
@@ -86,7 +90,32 @@ class AudioControlWebserver(MetadataDisplay):
     # ## begin URL handlers
     # ##
     def index_handler(self):
-        return template('tpl/index.html', vars(self.metadata))
+        data = vars(self.metadata)
+        # Check if LastFM is configured for a specific user and
+        # enable/disable favorite feature
+        if (self.lastfm_network is not None) and (
+                self.lastfm_network.username is not None):
+            data["support_favorites"] = 1
+        else:
+            data["support_favorites"] = 0
+
+        return template('tpl/index.html', data)
+
+    def radio_handler(self):
+        url = request.query.stationurl
+        if url is None or url == "":
+            return template('tpl/radio.html',
+                            {"stations": self.radio_stations})
+        else:
+            # Open URL using mpc
+            logging.info("opening radio URL %s using mpc", url)
+            commands = ["clear", "add {}", "play"]
+            for cmd in commands:
+                mycmd = "mpc {}".format(cmd.format(url))
+                err = os.system(mycmd)
+                if err:
+                    logging.error("command %s failed with error %s",
+                                  mycmd, err)
 
     def status_handler(self):
         response.content_type = 'text/plain; charset=UTF8'
@@ -116,8 +145,12 @@ class AudioControlWebserver(MetadataDisplay):
                 continue
 
             if command == "love":
-                logging.info("Sending love to Last.FM")
-                break
+                self.love_track(True)
+                continue
+
+            if command == "unlove":
+                self.love_track(False)
+                continue
 
             if self.controller is not None:
                 try:
@@ -129,6 +162,19 @@ class AudioControlWebserver(MetadataDisplay):
             else:
                 logging.info(
                     "No controller connected, ignoring websocket command")
+
+    def love_track(self, love):
+        try:
+            track = self.lastfm_network.get_track(self.metadata.artist,
+                                                  self.metadata.title)
+            if love:
+                logging.info("Sending love to Last.FM")
+                track.love()
+            else:
+                logging.info("Sending unlove to Last.FM")
+                track.love()
+        except Exception as e:
+            logging.warning("got exception %s while love/unlove", e)
 
     def static_handler(self, filename):
         return static_file(filename, root='static')
@@ -185,8 +231,11 @@ class AudioControlWebserver(MetadataDisplay):
     def set_controller(self, controller):
         self.controller = controller
 
-    def set_lastfm(self, lastfm):
-        self.lastfm = lastfm
+    def set_lastfm_network(self, lastfm_network):
+        self.lastfm_network = lastfm_network
+
+    def set_radio_stations(self, stations):
+        self.radio_stations = stations
 
     def __str__(self):
         return "webserver@{}".format(self.port)

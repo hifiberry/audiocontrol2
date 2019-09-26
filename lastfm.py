@@ -28,7 +28,7 @@ from metadata import MetadataDisplay
 import pylast
 
 
-class LastFM(MetadataDisplay):
+class LastFMDisplay(MetadataDisplay):
 
     def __init__(self, API_KEY, API_SECRET,
                  lastfm_username, lastfm_password,
