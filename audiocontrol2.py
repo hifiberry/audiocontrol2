@@ -62,25 +62,40 @@ def parse_config(debugmode=False):
 #    config = configparser.RawConfigParser()
 #    config.optionxform = lambda option: option
 
-    config.read('/etc/audiocontrol2.conf')
+    config.read("/etc/audiocontrol2.conf")
 
     # Auto pause for mpris players
-    auto_pause = config.getboolean('mpris', 'auto_pause',
-                                   fallback=False)
+    auto_pause = False
+
+    if "mpris" in config.sections():
+        auto_pause = config.getboolean("mpris", "auto_pause",
+                                       fallback=False)
+        loop_delay = config.getint("mrpis", "loop_delay",
+                                   fallback=1)
+        mpris.loop_delay = loop_delay
+        ignore_players = []
+        for p in config.get("mpris", "ignore",
+                            fallback="").split(","):
+            playername = p.strip()
+            ignore_players.append(playername)
+            logging.info("Ignoring player %s", playername)
+
+        mpris.ignore_players = ignore_players
+
     logging.debug("Setting auto_pause for MPRIS players to %s",
                   auto_pause)
     mpris.auto_pause = auto_pause
 
     # Console metadata logger
-    if config.getboolean('metadata', 'logger-console', fallback=False):
+    if config.getboolean("metadata", "logger-console", fallback=False):
         logging.debug("Starting console logger")
         mpris.register_metadata_display(MetadataConsole())
 
     # Web server
-    if config.getboolean('webserver', 'webserver-enable', fallback=False):
+    if config.getboolean("webserver", "enable", fallback=False):
         logging.debug("Starting webserver")
-        port = config.getint('webserver',
-                             'webserver-port',
+        port = config.getint("webserver",
+                             "port",
                              fallback=80)
         server = AudioControlWebserver(port=port, debug=debugmode)
         mpris.register_metadata_display(server)

@@ -71,12 +71,14 @@ class MPRISController (PlayerController):
     Controller for MPRIS enabled media players
     """
 
-    def __init__(self, auto_pause=True):
+    def __init__(self, auto_pause=True, loop_delay=1, ignore_players=[]):
         self.state_table = {}
         self.bus = dbus.SystemBus()
         self.auto_pause = auto_pause
         self.metadata_displays = []
         self.last_update = None
+        self.loop_delay = loop_delay
+        self.ignore_players = ignore_players
 
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
@@ -234,6 +236,9 @@ class MPRISController (PlayerController):
 
             for p in self.retrievePlayers():
 
+                if self.playername(p) in self.ignore_players:
+                    continue
+
                 if p not in self.state_table:
                     self.state_table[p] = PlayerState()
 
@@ -306,7 +311,7 @@ class MPRISController (PlayerController):
 
             self.last_update = datetime.datetime.now()
 
-            time.sleep(0.5)
+            time.sleep(self.loop_delay)
 
     def __str__(self):
         """
