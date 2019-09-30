@@ -37,30 +37,25 @@
  			
  			if (data.hasOwnProperty('artist')){
 				document.getElementById("artist").innerHTML = data.artist.concat(": &nbsp;")
-		  	} else {
-				document.getElementById("artist").innerHTML = "unknown"
-		    }
+		  	} 
 		  	
  			if (data.hasOwnProperty('title')){
 				document.getElementById("title").innerHTML = data.title
-		  	} else {
-				document.getElementById("title").innerHTML = "unknown"
 		  	}
 		  	
  			if (data.hasOwnProperty('albumTitle')){
 				document.getElementById("albumTitle").innerHTML = data.albumTitle
-		  	} else {
-				document.getElementById("albumTitle").innerHTML = ""
 		  	}
-		  	
 		  	
 		  	// favorite status
- 			if (data.hasOwnProperty('loved') && data.loved) {
- 				favorite = true;
-		  	} else {
- 				favorite = false;
+ 			if (data.hasOwnProperty('loved')) {
+ 			 	if (data.loved) {
+ 					favorite = true;
+		  		} else {
+ 					favorite = false;
+		  		}
+		  		update_fav();
 		  	}
-		  	update_fav();
 		  	
 		  	
 		  	// We use either artData or artUrl with this. artUrl is used for external
@@ -94,15 +89,21 @@
 		  		}
 		  	}
 		  	
+		  	if (data.hasOwnProperty('volume')) {
+		  		console.log(data.volume)
+		  		document.getElementById("volume").value = data.volume
+		  	}
+		  	
 		  	document.title = playerName.concat("/",playerState);
 					  	
         };
   	  console.log('Web Socket enabled.');
 	  })();
 	  
-	  function sendCommand(cmd){
+	  function sendCommand(cmd, param=null){
 	  	socket.send(JSON.stringify({
   			"command": cmd,
+  			"param": param,
   			"playerName": playerName 
 		}));
       }
@@ -136,6 +137,11 @@
       
       function previous() {
         sendCommand("Previous");
+      }    
+      
+      function set_volume() {
+      	volume = document.getElementById("volume").value
+      	sendCommand('volume',volume)
       }
       
       function playing() {
@@ -191,8 +197,12 @@
 		</div>
 			
 		
-	    <div class="row mx-auto" style="height:81%">
+	    <div class="row mx-auto" style="height:78%">
 			<img id="coverArt" class="h-100 mx-auto rounded d-block img-fluid" src="{{get('artUrl', '')}}"></img>
+		</div>
+
+	    <div class="row text-center"" style="height:5%">
+			<input id="volume" type="range" name="volume" min="0" max="100" value="{{get('volume', 0)}}" onChange="set_volume();"/>
 		</div>
 		
 	    <div class="row navrow" >

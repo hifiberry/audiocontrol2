@@ -32,4 +32,4 @@ def restart_service(service_name):
             cmd = 'systemctl restart {}'.format(service)
             os.system(cmd)
     else:
-        logging.warning("don't know how to restart %s")
+        logging.warning("don't know how to restart %s", service_name)

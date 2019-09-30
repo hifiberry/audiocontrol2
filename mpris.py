@@ -73,12 +73,12 @@ class MPRISController (PlayerController):
 
     def __init__(self, auto_pause=True, loop_delay=1, ignore_players=[]):
         self.state_table = {}
-        self.bus = dbus.SystemBus()
         self.auto_pause = auto_pause
         self.metadata_displays = []
         self.last_update = None
         self.loop_delay = loop_delay
         self.ignore_players = ignore_players
+        self.connect_dbus()
 
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
@@ -87,6 +87,16 @@ class MPRISController (PlayerController):
         for md in self.metadata_displays:
             logging.debug("metadata_notify: %s %s", md, metadata)
             md.notify(metadata)
+
+    def connect_dbus(self):
+        self.bus = dbus.SystemBus()
+        self.device_prop_interfaces = {}
+
+    def dbus_get_device_prop_interface(self, name):
+        proxy = self.bus.get_object(name, "/org/mpris/MediaPlayer2")
+        device_prop = dbus.Interface(
+            proxy, "org.freedesktop.DBus.Properties")
+        return device_prop
 
     def retrievePlayers(self):
         """
@@ -101,23 +111,19 @@ class MPRISController (PlayerController):
         Returns the playback state for the given player instance
         """
         try:
-            proxy = self.bus.get_object(name, "/org/mpris/MediaPlayer2")
-            device_prop = dbus.Interface(
-                proxy, "org.freedesktop.DBus.Properties")
+            device_prop = self.dbus_get_device_prop_interface(name)
             state = device_prop.Get("org.mpris.MediaPlayer2.Player",
                                     "PlaybackStatus")
             return state
-        except:
-            return None
+        except Exception as e:
+            logging.warn("got exception %s", e)
 
     def retrieveMeta(self, name):
         """
         Return the metadata for the given player instance
         """
         try:
-            proxy = self.bus.get_object(name, "/org/mpris/MediaPlayer2")
-            device_prop = dbus.Interface(
-                proxy, "org.freedesktop.DBus.Properties")
+            device_prop = self.dbus_get_device_prop_interface(name)
             prop = device_prop.Get(
                 "org.mpris.MediaPlayer2.Player", "Metadata")
             try:

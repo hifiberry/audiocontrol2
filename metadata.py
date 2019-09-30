@@ -180,7 +180,9 @@ class DummyMetadataCreator(Thread):
                           artUrl=covers[coverindex],
                           playerName="dummy",
                           playerState=states[stateindex])
-            self.display.notify(md)
+            if self.display is not None:
+                self.display.notify(md)
+
             sleep(self.interval)
 
     def stop(self):

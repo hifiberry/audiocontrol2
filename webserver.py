@@ -47,6 +47,8 @@ class AudioControlWebserver(MetadataDisplay):
         self.controller = None
         self.lastfm_network = None
         self.radio_stations = None
+        self.volume_control = None
+        self.volume = 0
         thread = threading.Thread(target=self.startServer, args=())
         thread.daemon = True
         thread.start()
@@ -99,6 +101,8 @@ class AudioControlWebserver(MetadataDisplay):
         else:
             data["support_favorites"] = 0
 
+        data["volume"] = self.volume
+
         return template('tpl/index.html', data)
 
     def radio_handler(self):
@@ -150,6 +154,21 @@ class AudioControlWebserver(MetadataDisplay):
 
             if command == "unlove":
                 self.love_track(False)
+                continue
+
+            if command == "volume":
+                if "param" in parsed:
+                    volume = parsed["param"]
+                else:
+                    logging.warning(
+                        "volume change request without volume value")
+                    continue
+
+                if self.volume_control is not None:
+                    self.volume_control.set_volume(volume)
+                else:
+                    logging.debug(
+                        "volume change requested, but no volume controller available")
                 continue
 
             if self.controller is not None:
@@ -213,7 +232,15 @@ class AudioControlWebserver(MetadataDisplay):
             else:
                 metadata.artUrl = "static/unknown.png"
 
-        md_json = json.dumps(vars(metadata))
+        self.send_websocket_update(vars(metadata))
+
+    def update_volume(self, vol):
+        self.volume = vol
+        self.send_websocket_update({"volume": vol})
+
+    def send_websocket_update(self, dictionary):
+        md_json = json.dumps(dictionary)
+
         # It's necessary to create a copy as the set might be modified here
 
         for ws in self.websockets.copy():

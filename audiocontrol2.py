@@ -25,6 +25,7 @@ import configparser
 import logging
 import os
 import sys
+from _collections import OrderedDict
 
 from mpris import MPRISController
 import metadata
@@ -32,7 +33,7 @@ from metadata import MetadataConsole, DummyMetadataCreator
 from lastfm import LastFMDisplay
 from webserver import AudioControlWebserver
 import watchdog
-from _collections import OrderedDict
+from alsavolume import ALSAVolume
 
 mpris = MPRISController()
 
@@ -55,6 +56,7 @@ def print_state(signalNumber=None, frame=None):
 
 def parse_config(debugmode=False):
     server = None
+    volume_control = None
 
     config = configparser.ConfigParser()
     config.optionxform = lambda option: option
@@ -167,6 +169,21 @@ def parse_config(debugmode=False):
             url = config["radio"][station]
             stations[station] = url
         server.set_radio_stations(stations)
+
+    # Volume
+    if "volume" in config.sections():
+        mixer_name = config.get("volume",
+                                "mixer_control",
+                                fallback=None)
+        if mixer_name is not None:
+            volume_control = ALSAVolume(mixer_name)
+            logging.info("Monitoring mixer %s", mixer_name)
+
+            if server is not None:
+                volume_control.add_listener(server)
+                server.volume_control = volume_control
+
+            volume_control.start()
 
     if debugmode:
         dummy = DummyMetadataCreator(server, interval=3)
