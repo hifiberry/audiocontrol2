@@ -1,5 +1,5 @@
 '''
-Copyright (c) 2018 Modul 9/HiFiBerry
+Copyright (c) 2019 Modul 9/HiFiBerry
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,8 @@ from bottle import Bottle, template, static_file, request, response
 from bottle.ext.websocket import GeventWebSocketServer, websocket
 
 from metadata import Metadata, MetadataDisplay, enrich_metadata
+
+from hifiberryos import network
 
 
 class AudioControlWebserver(MetadataDisplay):
@@ -67,6 +69,15 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/radio',
                           method="GET",
                           callback=self.radio_handler)
+        self.bottle.route('/network',
+                          method="GET",
+                          callback=self.networkconfig_handler)
+        self.bottle.route('/wifiscan',
+                          method="GET",
+                          callback=self.wifiscan_handler)
+        self.bottle.route('/configurenetwork',
+                          method="POST",
+                          callback=self.configurenetwork_handler)
         self.bottle.route('/websocket',
                           method="GET",
                           callback=self.websocket_handler,
@@ -104,6 +115,23 @@ class AudioControlWebserver(MetadataDisplay):
         data["volume"] = self.volume
 
         return template('tpl/index.html', data)
+
+    def networkconfig_handler(self):
+        data = network.get_current_config()
+        data["systemname"] = "hifiberry"
+
+        print(data)
+        return template('tpl/network.html', data)
+
+    def wifiscan_handler(self):
+        data = network.find_networks()
+        # TODO: sort by strength
+        return data
+
+    def configurenetwork_handler(self):
+        data = network.find_networks()
+        # TODO: sort by strength
+        return data
 
     def radio_handler(self):
         url = request.query.stationurl
