@@ -24,7 +24,7 @@ import os
 import time
 import re
 
-from . import hifiberry_config
+from hifiberryos import hifiberry_config
 
 ETH = "ethernet"
 WLAN = "wlan"

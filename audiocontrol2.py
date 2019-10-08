@@ -20,6 +20,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
+'''
+This is the main audio control process that reads the configuration file,
+initializes all subsystems and starts the required threads.
+
+Functionality is implemented in the ac2.* modules
+'''
+
+
 import signal
 import configparser
 import logging
@@ -27,13 +35,13 @@ import os
 import sys
 from _collections import OrderedDict
 
-from mpris import MPRISController
-import metadata
-from metadata import MetadataConsole, DummyMetadataCreator
-from lastfm import LastFMDisplay
-from webserver import AudioControlWebserver
-import watchdog
-from alsavolume import ALSAVolume
+from ac2.mpris import MPRISController
+from ac2.metadata import lastfmuser, MetadataConsole, DummyMetadataCreator
+from ac2.lastfm import LastFMDisplay
+from ac2.webserver import AudioControlWebserver
+from ac2.alsavolume import ALSAVolume
+
+import ac2.watchdog
 
 mpris = MPRISController()
 
@@ -52,6 +60,15 @@ def print_state(signalNumber=None, frame=None):
     """
     if mpris is not None:
         print("\n" + str(mpris))
+
+
+def create_object(classname, path=None):
+    components = classname.split('.')
+    mod = __import__(components[0])
+    for comp in components[1:]:
+        mod = getattr(mod, comp)
+
+    return mod()
 
 
 def parse_config(debugmode=False):
@@ -143,7 +160,7 @@ def parse_config(debugmode=False):
                 if not(anon):
                     mpris.register_metadata_display(lastfmdisplay)
                     logging.info("Scrobbling to %s", network)
-                    metadata.lastfmuser = username
+                    lastfmuser = username
 
                 if server is not None:
                     server.set_lastfm_network(lastfmdisplay.network)
@@ -158,7 +175,7 @@ def parse_config(debugmode=False):
     if "watchdog" in config.sections():
         for player in config["watchdog"]:
             services = config["watchdog"][player].split(",")
-            watchdog.player_mapping[player] = services
+            ac2.watchdog.player_mapping[player] = services
             logging.info("configuring watchdog %s: %s",
                          player, services)
 
@@ -184,6 +201,19 @@ def parse_config(debugmode=False):
                 server.volume_control = volume_control
 
             volume_control.start()
+
+    # Plugins
+    if "plugins" in config.sections():
+        plugin_dir = config.get("plugins",
+                                "directory",
+                                fallback=None)
+        if plugin_dir is not None:
+            sys.path.append(plugin_dir)
+
+        for metadata_plugin in config.get("plugins",
+                                          "metadata",
+                                          fallback="").split(","):
+            print(metadata_plugin)
 
     if debugmode:
         dummy = DummyMetadataCreator(server, interval=3)

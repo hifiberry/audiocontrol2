@@ -24,7 +24,7 @@ import time
 import logging
 import datetime
 
-from metadata import MetadataDisplay
+from ac2.metadata import MetadataDisplay
 import pylast
 
 

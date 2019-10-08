@@ -25,10 +25,10 @@ import time
 import logging
 import datetime
 
-from metadata import Metadata
-from controller import PlayerController
-import watchdog
-from helpers import array_to_string
+from ac2.metadata import Metadata
+from ac2.controller import PlayerController
+from ac2 import watchdog
+from ac2.helpers import array_to_string
 
 PLAYING = "playing"
 PAUSED = "playing"

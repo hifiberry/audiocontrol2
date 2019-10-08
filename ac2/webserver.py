@@ -30,9 +30,9 @@ import urllib.parse
 from bottle import Bottle, template, static_file, request, response
 from bottle.ext.websocket import GeventWebSocketServer, websocket
 
-from metadata import Metadata, MetadataDisplay, enrich_metadata
+from ac2.metadata import Metadata, MetadataDisplay, enrich_metadata
 
-from hifiberryos import network
+import hifiberryos.network as network
 
 
 class AudioControlWebserver(MetadataDisplay):
