@@ -54,7 +54,7 @@ class AudioControlWebserver(MetadataDisplay):
         thread = threading.Thread(target=self.startServer, args=())
         thread.daemon = True
         thread.start()
-        logging.info("Started web server on port {}".format(self.port))
+        logging.info("started web server on port {}".format(self.port))
 
         # TODO: debug code
         self.websockets = set()
@@ -152,14 +152,14 @@ class AudioControlWebserver(MetadataDisplay):
     def status_handler(self):
         response.content_type = 'text/plain; charset=UTF8'
         if self.controller is not None:
-            return "Status\n\n{}".format(self.controller)
+            return "status\n\n{}".format(self.controller)
         else:
-            return "Not connectedt to a controller"
+            return "not connectedt to a controller"
 
     def websocket_handler(self, ws):
         print(ws)
         self.websockets.add(ws)
-        print("Connected new web socket, now {} clients".format(
+        print("connected new web socket, now {} clients".format(
             len(self.websockets)))
         while True:
             msg = ws.receive()
@@ -173,7 +173,7 @@ class AudioControlWebserver(MetadataDisplay):
                 command = parsed["command"]
                 playerName = parsed["playerName"]
             except:
-                logging.error("Can't parse command %s", msg)
+                logging.error("can't parse command %s", msg)
                 continue
 
             if command == "love":
@@ -208,17 +208,17 @@ class AudioControlWebserver(MetadataDisplay):
                                   command, playerName)
             else:
                 logging.info(
-                    "No controller connected, ignoring websocket command")
+                    "no controller connected, ignoring websocket command")
 
     def love_track(self, love):
         try:
             track = self.lastfm_network.get_track(self.metadata.artist,
                                                   self.metadata.title)
             if love:
-                logging.info("Sending love to Last.FM")
+                logging.info("sending love to Last.FM")
                 track.love()
             else:
-                logging.info("Sending unlove to Last.FM")
+                logging.info("sending unlove to Last.FM")
                 track.love()
         except Exception as e:
             logging.warning("got exception %s while love/unlove", e)

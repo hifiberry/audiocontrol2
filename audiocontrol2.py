@@ -105,22 +105,22 @@ def parse_config(debugmode=False):
 
         mpris.ignore_players = ignore_players
 
-    logging.debug("Setting auto_pause for MPRIS players to %s",
+    logging.debug("setting auto_pause for MPRIS players to %s",
                   auto_pause)
     mpris.auto_pause = auto_pause
 
     # Web server
     if config.getboolean("webserver", "enable", fallback=False):
-        logging.debug("Starting webserver")
+        logging.debug("starting webserver")
         port = config.getint("webserver",
                              "port",
                              fallback=80)
         server = AudioControlWebserver(port=port, debug=debugmode)
         mpris.register_metadata_display(server)
         server.set_controller(mpris)
-        logging.info("Started web server on port %s", port)
+        logging.info("started web server on port %s", port)
     else:
-        logging.error("Web server disabled")
+        logging.error("web server disabled")
 
     # LastFMDisplay/LibreFM
     if "lastfm" in config.sections():
@@ -144,7 +144,7 @@ def parse_config(debugmode=False):
             anon = False
             if username is None or \
                     password is None:
-                logging.info("Using %s anonymously", network)
+                logging.info("using %s anonymously", network)
                 username = None
                 password = None
                 anon = True
@@ -158,7 +158,7 @@ def parse_config(debugmode=False):
                 lastfmdisplay.network.enable_caching()
                 if not(anon):
                     mpris.register_metadata_display(lastfmdisplay)
-                    logging.info("Scrobbling to %s", network)
+                    logging.info("scrobbling to %s", network)
                     lastfmuser = username
 
                 if server is not None:
@@ -193,13 +193,24 @@ def parse_config(debugmode=False):
                                 fallback=None)
         if mixer_name is not None:
             volume_control = ALSAVolume(mixer_name)
-            logging.info("Monitoring mixer %s", mixer_name)
+            logging.info("monitoring mixer %s", mixer_name)
 
             if server is not None:
                 volume_control.add_listener(server)
                 server.volume_control = volume_control
 
             volume_control.start()
+
+    # Keyboard volume control/remote control
+    if "keyboard" in config.sections():
+        logging.error("Keybor")
+        from ac2.plugins.control.keyboard import Keyboard
+        logging.error("Keybor2")
+        keyboard_controller = Keyboard()
+        logging.error("Keybor3")
+
+        logging.info("starting keyboard listener")
+        keyboard_controller.start()
 
     # Plugins
     if "plugins" in config.sections():
