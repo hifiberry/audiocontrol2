@@ -26,7 +26,7 @@ import logging
 import datetime
 
 from ac2.metadata import Metadata
-from ac2.controller import PlayerController
+# from ac2.controller import PlayerController
 from ac2 import watchdog
 from ac2.helpers import array_to_string
 
@@ -66,7 +66,7 @@ class PlayerState:
         return self.state + str(self.metadata)
 
 
-class MPRISController (PlayerController):
+class MPRISController():
     """
     Controller for MPRIS enabled media players
     """
