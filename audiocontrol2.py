@@ -36,7 +36,7 @@ import sys
 from _collections import OrderedDict
 
 from ac2.mpris import MPRISController
-from ac2.metadata import lastfmuser, MetadataConsole, DummyMetadataCreator
+from ac2.metadata import lastfmuser
 from ac2.lastfm import LastFMDisplay
 from ac2.webserver import AudioControlWebserver
 from ac2.alsavolume import ALSAVolume
@@ -62,13 +62,17 @@ def print_state(signalNumber=None, frame=None):
         print("\n" + str(mpris))
 
 
-def create_object(classname, path=None):
-    components = classname.split('.')
-    mod = __import__(components[0])
-    for comp in components[1:]:
-        mod = getattr(mod, comp)
+def create_object(classname):
+    #    [module_name, class_name] = classname.rsplit(".", 1)
+    #    module = __import__(module_name)
+    #    my_class = getattr(module, class_name)
 
-    return mod()
+    import importlib
+    module_name, class_name = classname.rsplit(".", 1)
+    MyClass = getattr(importlib.import_module(module_name), class_name)
+    instance = MyClass()
+
+    return instance
 
 
 def parse_config(debugmode=False):
@@ -104,11 +108,6 @@ def parse_config(debugmode=False):
     logging.debug("Setting auto_pause for MPRIS players to %s",
                   auto_pause)
     mpris.auto_pause = auto_pause
-
-    # Console metadata logger
-    if config.getboolean("metadata", "logger-console", fallback=False):
-        logging.debug("Starting console logger")
-        mpris.register_metadata_display(MetadataConsole())
 
     # Web server
     if config.getboolean("webserver", "enable", fallback=False):
@@ -213,9 +212,18 @@ def parse_config(debugmode=False):
         for metadata_plugin in config.get("plugins",
                                           "metadata",
                                           fallback="").split(","):
-            print(metadata_plugin)
+            try:
+                metadata_plugin = create_object(metadata_plugin)
+                mpris.register_metadata_display(metadata_plugin)
+                logging.info("Registered metadata plugin %s",
+                             metadata_plugin)
+            except Exception as e:
+                logging.error("Can't load metadata plugin %s (%s)",
+                              metadata_plugin,
+                              e)
 
     if debugmode:
+        from ac2.metadata import DummyMetadataCreator
         dummy = DummyMetadataCreator(server, interval=3)
         dummy.start()
 
