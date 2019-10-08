@@ -119,19 +119,6 @@ class MetadataDisplay:
         raise RuntimeError("notify not implemented")
 
 
-class MetadataConsole(MetadataDisplay):
-
-    def __init__(self):
-        super()
-        pass
-
-    def notify(self, metadata):
-        print("{:16s}: {}".format(metadata.playerName, metadata))
-
-    def __str__(self):
-        return "console"
-
-
 class DummyMetadataCreator(Thread):
     """
     A class just use for development. It creates dummy metadata records and
