@@ -54,7 +54,8 @@ When setting the volume, use JSON encoding with the volume defined as "percent":
 curl -X POST -H "Content-Type: application/json" -d '{"percent":"50"} http://127.0.0.1:/api/volume
 ```
 
-
+If the percent value starts with + or -, it will change the volume by this amount (e.g. "+1" will by
+[one louder](https://www.youtube.com/watch?v=_sRhuh8Aphc))
 
 ## Examples
 
@@ -62,4 +63,5 @@ curl -X POST -H "Content-Type: application/json" -d '{"percent":"50"} http://127
 curl -X post http://127.0.0.1:/api/player/previous
 curl -X post http://127.0.0.1:/api/track/love
 curl http://127.0.0.1:/api/track/metadata
+curl -X POST -H "Content-Type: application/json" -d '{"percent":"+5"} http://127.0.0.1:/api/volume
 ```
