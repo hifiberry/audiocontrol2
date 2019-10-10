@@ -6,7 +6,7 @@ With the REST API you can control players using HTTP requests. At this point, no
 
 Player control commands use POST requests
 ```
-/ai/player/play
+/api/player/play
 /api/player/pause
 /api/player/playpause
 /api/player/stop
@@ -15,6 +15,15 @@ Player control commands use POST requests
 /api/player/love
 /api/player/unlove
 ```
+
+## Player status
+
+List of all players with their current status can be retrieved by
+```
+/api/player/status
+```
+
+Note that this is mostly for debugging, the format might change without further notice.
 
 ## Examples
 
