@@ -39,6 +39,22 @@ To send a love/unlove to Last.FM (if configured), use a HTTP POST to
 /api/track/unlove
 ```
 
+## Volume
+
+```
+/api/volume
+```
+
+This endpoint can be used to get the current volume using a HTTP get request
+or set the volume using HTTP POST.
+
+When setting the volume, use JSON encoding with the volume defined as "percent":
+
+```
+curl -X POST -H "Content-Type: application/json" -d '{"percent":"50"} http://127.0.0.1:/api/volume
+```
+
+
 
 ## Examples
 
