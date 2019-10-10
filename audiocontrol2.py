@@ -209,13 +209,42 @@ def parse_config(debugmode=False):
 
     # Keyboard volume control/remote control
     if "keyboard" in config.sections():
-        from ac2.plugins.control.keyboard import Keyboard
-        keyboard_controller = Keyboard()
-        keyboard_controller.set_player_control(mpris)
-        keyboard_controller.set_volume_control(volume_control)
+        moduleok = False
+        try:
+            from ac2.plugins.control.keyboard import Keyboard
+            moduleok = True
+        except Exception as e:
+            logging.error("Can't activate keyboard: %s", e)
 
-        keyboard_controller.start()
-        logging.info("started keyboard listener")
+        if moduleok:
+            keyboard_controller = Keyboard()
+            keyboard_controller.set_player_control(mpris)
+            keyboard_controller.set_volume_control(volume_control)
+
+            keyboard_controller.start()
+            logging.info("started keyboard listener")
+
+    # Metadata push to GUI
+    if "metadata_post" in config.sections():
+        moduleok = False
+        try:
+            from ac2.plugins.metadata.http import MetadataHTTPRequest
+            moduleok = True
+        except Exception as e:
+            logging.error("Can't activate metadata_post: %s", e)
+
+        if moduleok:
+            url = config.get("metadata_post",
+                             "url",
+                             fallback=None)
+
+            if url is None:
+                logging.error("can't activate metadata_post, url missing")
+            else:
+                logging.info("posting metadata to %s", url)
+
+            metadata_pusher = MetadataHTTPRequest(url)
+            mpris.register_metadata_display(metadata_pusher)
 
     # Plugins
     if "plugins" in config.sections():
