@@ -80,6 +80,7 @@ class MPRISController():
         self.active_player = None
         self.ignore_players = ignore_players
         self.metadata = {}
+        self.playing = False
         self.connect_dbus()
 
     def register_metadata_display(self, mddisplay):
@@ -248,6 +249,7 @@ class MPRISController():
         while not(finished):
             new_player_started = None
             metadata_notified = False
+            playing = False
 
             for p in self.retrievePlayers():
 
@@ -293,12 +295,15 @@ class MPRISController():
                     # Even if we din't send metadata, this is still
                     # flagged
                     metadata_notified = True
+                    playing = True
                 else:
                     # always keep one player in the active_players
                     # list
                     if len(active_players) > 1:
                         if p in active_players:
                             active_players.remove(p)
+
+            self.playing = playing
 
             # There might be no active player, but one that is paused
             # or stopped
@@ -345,7 +350,10 @@ class MPRISController():
 
     def playpause(self, pause=None):
             if pause is None:
-                self.send_command(MPRIS_PLAYPAUSE)
+                if self.playing:
+                    self.send_command(MPRIS_PAUSE)
+                else:
+                    self.send_command(MPRIS_PLAY)
             elif pause:
                 self.send_command(MPRIS_PAUSE)
             else:
