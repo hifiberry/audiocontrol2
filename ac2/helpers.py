@@ -27,6 +27,9 @@ def array_to_string(arr):
     """
     res = ""
 
+    if arr is None:
+        return None
+
     if hasattr(arr, '__iter__'):
         for part in arr:
             if part is not None:
