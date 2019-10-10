@@ -46,15 +46,11 @@ class AudioControlWebserver(MetadataDisplay):
         self.debug = debug
         self.bottle = Bottle()
         self.route()
-        self.controller = None
+        self.player_control = None
         self.lastfm_network = None
         self.radio_stations = None
         self.volume_control = None
         self.volume = 0
-        thread = threading.Thread(target=self.startServer, args=())
-        thread.daemon = True
-        thread.start()
-        logging.info("started web server on port {}".format(self.port))
 
         # TODO: debug code
         self.websockets = set()
@@ -88,12 +84,26 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/artwork/<filename>',
                           method="GET",
                           callback=self.artwork_handler)
-        self.bottle.route('/playerstatus',
+        self.bottle.route('/api/player/status',
                           method="GET",
-                          callback=self.status_handler)
+                          callback=self.playerstatus_handler)
+        self.bottle.route('/api/player/<command>',
+                          method="POST",
+                          callback=self.playercontrol_handler)
+        self.bottle.route('/api/track/metadata',
+                          method="GET",
+                          callback=self.metadata_handler)
+        self.bottle.route('/api/track/<command>',
+                          method="POST",
+                          callback=self.track_handler)
+        self.bottle.route('/api/volume',
+                          method="GET",
+                          callback=self.volume_get_handler)
+        self.bottle.route('/api/volume',
+                          method="POST",
+                          callback=self.volume_post_handler)
 
     def startServer(self):
-        # TODO: Remove debug mode when finished
         self.bottle.run(port=self.port,
                         host=self.host,
                         debug=self.debug,
@@ -102,6 +112,76 @@ class AudioControlWebserver(MetadataDisplay):
     # ##
     # ## begin URL handlers
     # ##
+
+    def playercontrol_handler(self, command):
+        try:
+            if not(self.send_command(command)):
+                response.status = 500
+                return "{} failed".format(command)
+
+        except Exception as e:
+            response.status = 500
+            return "{} failed with exception {}".format(command, e)
+
+        return "ok"
+
+    def playerstatus_handler(self):
+
+        if self.player_control is None:
+            response.status = 501
+            return "no player control available"
+
+        states = self.player_control.states()
+
+        return (states)
+
+    def metadata_handler(self):
+        print(self.metadata)
+        return json.dumps(self.metadata.__dict__, skipkeys=True)
+
+    def track_handler(self, command):
+        if (command in "love", "unlove"):
+            if not(self.send_command(command)):
+                response.status = 500
+                return "{} failed".format(command)
+        else:
+            response.status = 501
+            return "command %s not implemented".format(command)
+
+    def volume_get_handler(self):
+
+        if self.volume_control is None:
+            response.status = 501
+            return "no volume control available"
+
+        return ({"percent":self.volume_control.current_volume()})
+
+    def volume_post_handler(self):
+
+        if self.volume_control is None:
+            response.status = 501
+            return "no volume control available"
+
+        data = request.json
+        if "percent" in data:
+            vol = data["percent"]
+            value = 0
+            try:
+                value = int(vol)
+            except ValueError:
+                response.status = 401
+                return "invalid value {}".format(vol)
+
+            if vol[0] in ['+', '-']:
+                self.volume_control.change_volume_percent(value)
+            else:
+                self.volume_control.set_volume(value)
+        else:
+            response.status = 401
+            return "percent value missing"
+
+        return ({"percent":self.volume_control.current_volume()})
+
     def index_handler(self):
         data = vars(self.metadata)
         # Check if LastFM is configured for a specific user and
@@ -151,10 +231,10 @@ class AudioControlWebserver(MetadataDisplay):
 
     def status_handler(self):
         response.content_type = 'text/plain; charset=UTF8'
-        if self.controller is not None:
-            return "status\n\n{}".format(self.controller)
+        if self.player_control is not None:
+            return "status\n\n{}".format(self.player_control)
         else:
-            return "not connectedt to a controller"
+            return "not connected to a player control"
 
     def websocket_handler(self, ws):
         print(ws)
@@ -170,45 +250,90 @@ class AudioControlWebserver(MetadataDisplay):
 
             parsed = json.loads(msg)
             try:
-                command = parsed["command"]
-                playerName = parsed["playerName"]
+                command = parsed["command"].lower()
+                if "params" in parsed:
+                    params = parsed["params"]
+                else:
+                    params = None
+                self.send_command(command, params)
             except:
                 logging.error("can't parse command %s", msg)
                 continue
 
-            if command == "love":
-                self.love_track(True)
-                continue
+    def static_handler(self, filename):
+        return static_file(filename, root='static')
 
-            if command == "unlove":
-                self.love_track(False)
-                continue
+    def artwork_handler(self, filename):
+        return static_file(self.artworkfile, root='/')
 
-            if command == "volume":
-                if "param" in parsed:
-                    volume = parsed["param"]
-                else:
-                    logging.warning(
-                        "volume change request without volume value")
-                    continue
+    # ##
+    # ## end URL handlers
+    # ##
 
-                if self.volume_control is not None:
-                    self.volume_control.set_volume(volume)
-                else:
-                    logging.debug(
-                        "volume change requested, but no volume controller available")
-                continue
+    # ##
+    # ## controller functions
+    # ##
 
-            if self.controller is not None:
+    def set_volume_control(self, volumecontrol):
+        self.volume_control = volumecontrol
+
+    def set_player_control(self, playercontrol):
+        self.player_control = playercontrol
+
+    def start(self):
+        thread = threading.Thread(target=self.startServer, args=())
+        thread.daemon = True
+        thread.start()
+        logging.info("started web server on port {}".format(self.port))
+
+    def send_command(self, command, params=None):
+        if command == "love":
+            return self.love_track(True)
+
+        if command == "unlove":
+            return self.love_track(False)
+
+        if command == "volume":
+
+            if self.volume_control is not None:
                 try:
-                    self.controller.send_command(command=command,
-                                                 playerName=playerName)
-                except:
-                    logging.error("Failed to send MPRIS command %s to %s",
-                                  command, playerName)
+                    volume = int(params)
+                    self.volume_control.set_volume(volume)
+                except ValueError:
+                    logging.error("%s is not a valid volume", params)
+                    return False
             else:
+                logging.debug(
+                    "volume change requested, "
+                    "but no volume controller available")
+
+            return True
+
+        if command in ("next", "previous", "play", "pause", "playpause"):
+            if self.player_control is None:
                 logging.info(
                     "no controller connected, ignoring websocket command")
+
+            try:
+                if command == "next":
+                    self.player_control.next()
+                elif command == "previous":
+                    self.player_control.previous()
+                elif command == "play":
+                    self.player_control.playpause(pause=False)
+                elif command == "pause":
+                    self.player_control.playpause(pause=True)
+                elif command == "playpause":
+                    self.player_control.playpause(pause=None)
+                else:
+                    logging.error("unknown command %s", command)
+                    return False
+            except:
+                logging.error("failed to send command %s",
+                              command)
+                return False
+
+            return True
 
     def love_track(self, love):
         try:
@@ -222,15 +347,16 @@ class AudioControlWebserver(MetadataDisplay):
                 track.love()
         except Exception as e:
             logging.warning("got exception %s while love/unlove", e)
+            return False
 
-    def static_handler(self, filename):
-        return static_file(filename, root='static')
-
-    def artwork_handler(self, filename):
-        return static_file(self.artworkfile, root='/')
+        return True
 
     # ##
-    # ## end URL handlers
+    # ## end controller functions
+    # ##
+
+    # ##
+    # ##  metadata functions
     # ##
 
     def notify(self, metadata):
@@ -262,6 +388,10 @@ class AudioControlWebserver(MetadataDisplay):
 
         self.send_websocket_update(vars(metadata))
 
+    # ##
+    # ##  metadata functions
+    # ##
+
     def update_volume(self, vol):
         self.volume = vol
         self.send_websocket_update({"volume": vol})
@@ -282,9 +412,6 @@ class AudioControlWebserver(MetadataDisplay):
                     self.websockets.remove(ws)
                 except:
                     pass
-
-    def set_controller(self, controller):
-        self.controller = controller
 
     def set_lastfm_network(self, lastfm_network):
         self.lastfm_network = lastfm_network

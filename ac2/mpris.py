@@ -77,7 +77,9 @@ class MPRISController():
         self.metadata_displays = []
         self.last_update = None
         self.loop_delay = loop_delay
+        self.active_player = None
         self.ignore_players = ignore_players
+        self.metadata = {}
         self.connect_dbus()
 
     def register_metadata_display(self, mddisplay):
@@ -87,6 +89,7 @@ class MPRISController():
         for md in self.metadata_displays:
             logging.debug("metadata_notify: %s %s", md, metadata)
             md.notify(metadata)
+        self.metadata = metadata
 
     def connect_dbus(self):
         self.bus = dbus.SystemBus()
@@ -216,12 +219,18 @@ class MPRISController():
             return mprisname
 
     def send_command(self, command, playerName=None):
+        res = None
         if playerName is None:
-            return
-        elif playerName.startswith(MPRIS_PREFIX):
-            self.mpris_command(playerName, command)
+            if self.active_player is None:
+                logging.info("No active player, ignoring %s", command)
+                return
+            else:
+                playerName = self.active_player
+
+        if playerName.startswith(MPRIS_PREFIX):
+            res = self.mpris_command(playerName, command)
         else:
-            self.mpris_command(MPRIS_PREFIX + playerName, command)
+            res = self.mpris_command(MPRIS_PREFIX + playerName, command)
 
     def main_loop(self):
         """
@@ -306,6 +315,11 @@ class MPRISController():
 
                 md_prev = md
 
+            if len(active_players) > 0:
+                self.active_player = active_players[0]
+            else:
+                self.active_player = None
+
             if new_player_started is not None:
                 if self.auto_pause:
                     logging.info(
@@ -319,11 +333,34 @@ class MPRISController():
 
             time.sleep(self.loop_delay)
 
+    # ##
+    # ## controller functions
+    # ##
+
+    def previous(self):
+            self.send_command(MPRIS_PREV)
+
+    def next(self):
+            self.send_command(MPRIS_NEXT)
+
+    def playpause(self, pause=None):
+            if pause is None:
+                self.send_command(MPRIS_PLAYPAUSE)
+            elif pause:
+                self.send_command(MPRIS_PAUSE)
+            else:
+                self.send_command(MPRIS_PLAY)
+
+    # ##
+    # ## end controller functions
+    # ##
+
     def __str__(self):
         """
         String representation of the current state: all players,
         playback state and meta data
         """
+        logging.error("1")
         res = ""
         for p in self.state_table:
             res = res + "{:30s} - {:10s}: {}/{}\n".format(
@@ -335,3 +372,18 @@ class MPRISController():
         res = res + "\nLast updated {}\n".format(self.last_update)
 
         return res
+
+    def states(self):
+        logging.error("2")
+        players = []
+        for p in self.state_table:
+            player = {}
+            player["name"] = self.playername(p)
+            player["state"] = self.state_table[p].state
+            player["artist"] = self.state_table[p].metadata.artist
+            player["title"] = self.state_table[p].metadata.title
+
+            players.append(player)
+
+        return {"players":players, "last_updated": str(self.last_update)}
+

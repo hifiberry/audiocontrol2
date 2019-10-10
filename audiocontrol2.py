@@ -27,7 +27,6 @@ initializes all subsystems and starts the required threads.
 Functionality is implemented in the ac2.* modules
 '''
 
-
 import signal
 import configparser
 import logging
@@ -93,7 +92,7 @@ def parse_config(debugmode=False):
     if "mpris" in config.sections():
         auto_pause = config.getboolean("mpris", "auto_pause",
                                        fallback=False)
-        loop_delay = config.getint("mrpis", "loop_delay",
+        loop_delay = config.getint("mpris", "loop_delay",
                                    fallback=1)
         mpris.loop_delay = loop_delay
         ignore_players = []
@@ -117,7 +116,8 @@ def parse_config(debugmode=False):
                              fallback=80)
         server = AudioControlWebserver(port=port, debug=debugmode)
         mpris.register_metadata_display(server)
-        server.set_controller(mpris)
+        server.set_player_control(mpris)
+        server.start()
         logging.info("started web server on port %s", port)
     else:
         logging.error("web server disabled")
@@ -187,6 +187,7 @@ def parse_config(debugmode=False):
         server.set_radio_stations(stations)
 
     # Volume
+    volctl = False
     if "volume" in config.sections():
         mixer_name = config.get("volume",
                                 "mixer_control",
@@ -200,17 +201,21 @@ def parse_config(debugmode=False):
                 server.volume_control = volume_control
 
             volume_control.start()
+            volctl = True
+
+    if not(volctl):
+        logging.info("volume control not configured, "
+                     "disabling volume control support")
 
     # Keyboard volume control/remote control
     if "keyboard" in config.sections():
-        logging.error("Keybor")
         from ac2.plugins.control.keyboard import Keyboard
-        logging.error("Keybor2")
         keyboard_controller = Keyboard()
-        logging.error("Keybor3")
+        keyboard_controller.set_player_control(mpris)
+        keyboard_controller.set_volume_control(volume_control)
 
-        logging.info("starting keyboard listener")
         keyboard_controller.start()
+        logging.info("started keyboard listener")
 
     # Plugins
     if "plugins" in config.sections():

@@ -53,12 +53,35 @@ class ALSAVolume(threading.Thread):
             alsaaudio.Mixer(self.mixer_name).setvolume(int(vol),
                                                        alsaaudio.MIXER_CHANNEL_ALL)
 
+    def change_volume_percent(self, change):
+        vol = self.current_volume()
+        newvol = vol + change
+        if newvol < 0:
+            newvol = 0
+        elif newvol > 100:
+            newvol = 100
+
+        self.set_volume(newvol)
+
     def run(self):
         while True:
             self.update_volume()
             time.sleep(self.pollinterval)
 
     def update_volume(self, always_notify=False):
+        vol = self.current_volume()
+
+        if always_notify or (vol != self.volume):
+            logging.debug("ALSA volume changed to {}".format(vol))
+            self.volume = vol
+            for listener in self.listeners:
+                try:
+                    listener.update_volume(vol)
+                except Exception as e:
+                    logging.debug("exception %s during %s.volume_changed_percent",
+                                  e, listener)
+
+    def current_volume(self):
         import alsaaudio
 
         volumes = alsaaudio.Mixer(self.mixer_name).getvolume()
@@ -71,15 +94,7 @@ class ALSAVolume(threading.Thread):
         if channels > 0:
             vol = vol / channels
 
-        if always_notify or (vol != self.volume):
-            logging.debug("ALSA volume changed to {}".format(vol))
-            self.volume = vol
-            for listener in self.listeners:
-                try:
-                    listener.update_volume(vol)
-                except Exception as e:
-                    logging.debug("exception %s during %s.volume_changed_percent",
-                                  e, listener)
+        return vol
 
     def add_listener(self, listener):
         self.listeners.append(listener)
