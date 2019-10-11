@@ -32,6 +32,7 @@ import configparser
 import logging
 import os
 import sys
+import threading
 from _collections import OrderedDict
 
 from ac2.mpris import MPRISController
@@ -40,7 +41,7 @@ from ac2.lastfm import LastFMDisplay
 from ac2.webserver import AudioControlWebserver
 from ac2.alsavolume import ALSAVolume
 
-import ac2.watchdog
+from ac2 import watchdog
 
 mpris = MPRISController()
 
@@ -81,9 +82,6 @@ def parse_config(debugmode=False):
     config = configparser.ConfigParser()
     config.optionxform = lambda option: option
 
-#    config = configparser.RawConfigParser()
-#    config.optionxform = lambda option: option
-
     config.read("/etc/audiocontrol2.conf")
 
     # Auto pause for mpris players
@@ -118,6 +116,7 @@ def parse_config(debugmode=False):
         mpris.register_metadata_display(server)
         server.set_player_control(mpris)
         server.start()
+        watchdog.add_monitored_thread(server, "webserver")
         logging.info("started web server on port %s", port)
     else:
         logging.error("web server disabled")
@@ -174,7 +173,7 @@ def parse_config(debugmode=False):
     if "watchdog" in config.sections():
         for player in config["watchdog"]:
             services = config["watchdog"][player].split(",")
-            ac2.watchdog.player_mapping[player] = services
+            watchdog.player_mapping[player] = services
             logging.info("configuring watchdog %s: %s",
                          player, services)
 
@@ -201,6 +200,8 @@ def parse_config(debugmode=False):
                 server.volume_control = volume_control
 
             volume_control.start()
+            watchdog.add_monitored_thread(volume_control, "volume control")
+
             volctl = True
 
     if not(volctl):
@@ -214,7 +215,7 @@ def parse_config(debugmode=False):
             from ac2.plugins.control.keyboard import Keyboard
             moduleok = True
         except Exception as e:
-            logging.error("Can't activate keyboard: %s", e)
+            logging.error("can't activate keyboard: %s", e)
 
         if moduleok:
             keyboard_controller = Keyboard()
@@ -222,6 +223,9 @@ def parse_config(debugmode=False):
             keyboard_controller.set_volume_control(volume_control)
 
             keyboard_controller.start()
+            watchdog.add_monitored_thread(keyboard_controller,
+                                          "keyboard controller")
+
             logging.info("started keyboard listener")
 
     # Metadata push to GUI
@@ -231,7 +235,7 @@ def parse_config(debugmode=False):
             from ac2.plugins.metadata.http import MetadataHTTPRequest
             moduleok = True
         except Exception as e:
-            logging.error("Can't activate metadata_post: %s", e)
+            logging.error("can't activate metadata_post: %s", e)
 
         if moduleok:
             url = config.get("metadata_post",
@@ -260,10 +264,10 @@ def parse_config(debugmode=False):
             try:
                 metadata_plugin = create_object(metadata_plugin)
                 mpris.register_metadata_display(metadata_plugin)
-                logging.info("Registered metadata plugin %s",
+                logging.info("registered metadata plugin %s",
                              metadata_plugin)
             except Exception as e:
-                logging.error("Can't load metadata plugin %s (%s)",
+                logging.error("can't load metadata plugin %s (%s)",
                               metadata_plugin,
                               e)
 
@@ -285,12 +289,17 @@ def main():
                             level=logging.INFO)
 
     if ('DEBUG' in os.environ):
-        logging.warning("Starting in debug mode...")
+        logging.warning("starting in debug mode...")
         debugmode = True
     else:
         debugmode = False
 
     parse_config(debugmode=debugmode)
+
+    monitor = threading.Thread(target=watchdog.monitor_threads_and_exit)
+    monitor.start()
+    logging.info("started thread monitor for %s",
+                 ",".join(watchdog.monitored_threads.keys()))
 
     signal.signal(signal.SIGUSR1, pause_all)
     signal.signal(signal.SIGUSR2, print_state)
