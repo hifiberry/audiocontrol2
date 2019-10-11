@@ -24,6 +24,7 @@ import dbus
 import time
 import logging
 import datetime
+import copy
 
 from ac2.metadata import Metadata
 # from ac2.controller import PlayerController
@@ -89,7 +90,7 @@ class MPRISController():
     def metadata_notify(self, metadata):
         for md in self.metadata_displays:
             logging.debug("metadata_notify: %s %s", md, metadata)
-            md.notify(metadata)
+            md.notify(copy.copy(metadata))
         self.metadata = metadata
 
     def connect_dbus(self):
@@ -237,7 +238,7 @@ class MPRISController():
         """
         Main loop:
         - monitors state of all players
-        - pauses players if a new player starts palyback
+        - pauses players if a new player starts playback
         """
 
         finished = False
