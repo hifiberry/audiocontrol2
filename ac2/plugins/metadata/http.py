@@ -24,6 +24,8 @@ from ac2.metadata import MetadataDisplay
 
 import requests
 import logging
+from ac2.metadata import enrich_metadata
+import os
 
 
 class MetadataHTTPRequest(MetadataDisplay):
@@ -38,6 +40,28 @@ class MetadataHTTPRequest(MetadataDisplay):
         pass
 
     def notify(self, metadata):
+
+        localfile = None
+
+        enrich_metadata(metadata)
+
+        if metadata.artUrl is not None:
+            if metadata.artUrl.startswith("file://"):
+                localfile = metadata.artUrl[7:]
+            else:
+                url = urllib.parse.urlparse(metadata.artUrl, scheme="file")
+                if url.scheme == "file":
+                    localfile = url.path
+
+        if localfile is not None:
+            if os.path.isfile(localfile):
+                artworkfile = localfile
+                # use only file part of path name
+                metadata.artUrl = "artwork/" + \
+                    os.path.split(localfile)[1]
+            else:
+                metadata.artUrl = "static/unknown.png"
+
         if (self.request_type == "json"):
             try:
                 r = requests.post(self.url, json=metadata.__dict__)
