@@ -53,14 +53,10 @@ class MetadataHTTPRequest(MetadataDisplay):
                 if url.scheme == "file":
                     localfile = url.path
 
-        if localfile is not None:
-            if os.path.isfile(localfile):
-                artworkfile = localfile
-                # use only file part of path name
-                metadata.artUrl = "artwork/" + \
-                    os.path.split(localfile)[1]
-            else:
-                metadata.artUrl = "static/unknown.png"
+        if localfile is not None and os.path.isfile(localfile):
+            # use only file part of path name
+            metadata.artUrl = "artwork/" + \
+                os.path.split(localfile)[1]
 
         if (self.request_type == "json"):
             try:
