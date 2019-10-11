@@ -20,8 +20,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-from threading import Thread
-from time import sleep
 import logging
 from expiringdict import ExpiringDict
 import json
@@ -118,63 +116,6 @@ class MetadataDisplay:
         raise RuntimeError("notify not implemented")
 
 
-class DummyMetadataCreator(Thread):
-    """
-    A class just use for development. It creates dummy metadata records and
-    send it to the given MetadataDisplay objects
-    """
-
-    def __init__(self, display=None, interval=10):
-        super().__init__()
-        self.stop = False
-        self.interval = interval
-        self.display = display
-
-    def run(self):
-        import random
-
-        covers = ["https://images-na.ssl-images-amazon.com/images/I/81R6Jcf5eoL._SL1500_.jpg",
-                  "https://townsquare.media/site/443/files/2013/03/92rage.jpg?w=980&q=75",
-                  "file://unknown.png",
-                  None,
-                  None,
-                  None,
-                  None
-                  ]
-        songs = [
-            ["Madonna", "Like a Virgin"],
-            ["Rammstein", "Mutter"],
-            ["Iggy Pop", "James Bond"],
-            ["Porcupine Tree", "Normal"],
-            ["Clinton Shorter", "Truth"],
-            ["Bruce Springsteen", "The River"],
-            ["Plan B", "Kidz"],
-            ["The Spooks", "Things I've seen"],
-            ["Aldous Harding", "The Barrel"]
-        ]
-
-        states = ["playing", "paused", "stopped"]
-
-        while not(self.stop):
-
-            coverindex = random.randrange(len(covers))
-            songindex = random.randrange(len(songs))
-            stateindex = random.randrange(len(states))
-
-            md = Metadata(artist=songs[songindex][0],
-                          title=songs[songindex][1],
-                          artUrl=covers[coverindex],
-                          playerName="dummy",
-                          playerState=states[stateindex])
-            if self.display is not None:
-                self.display.notify(md)
-
-            sleep(self.interval)
-
-    def stop(self):
-        self.stop = True
-
-
 def enrich_metadata(metadata):
     enrich_metadata_from_lastfm(metadata)
 
@@ -184,9 +125,13 @@ lastfmcache = ExpiringDict(max_len=100,
 negativeCache = ExpiringDict(max_len=100,
                              max_age_seconds=600)
 
-urltemplate = "http://ws.audioscrobbler.com/2.0/?" \
+track_template = "http://ws.audioscrobbler.com/2.0/?" \
     "method=track.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
     "&artist={}&track={}&format=json{}"
+
+artist_template = "http://ws.audioscrobbler.com/2.0/?" \
+    "method=artist.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
+    "&artist={}&format=json{}"
 
 
 def enrich_metadata_from_lastfm(metadata):
@@ -210,9 +155,9 @@ def enrich_metadata_from_lastfm(metadata):
         else:
             try:
                 if negativeCache.get(key) is None:
-                    url = urltemplate.format(quote(metadata.artist),
-                                             quote(metadata.title),
-                                             userparam)
+                    url = track_template.format(quote(metadata.artist),
+                                                quote(metadata.title),
+                                                userparam)
                     with urlopen(url) as connection:
                         trackdata = json.loads(connection.read().decode())
                     lastfmcache[key] = trackdata
@@ -255,6 +200,25 @@ def enrich_metadata_from_lastfm(metadata):
         logging.info("no track data for %s/%s on Last.FM",
                      metadata.artist,
                      metadata.title)
+
+
+def artistInfo(artist_name):
+
+    key = "artist/{}".format(artist_name)
+    artist_data = lastfmcache.get(key)
+
+    if artist_data is not None:
+        logging.debug("Found cached entry for %s", key)
+    else:
+        try:
+            if negativeCache.get(key) is None:
+                url = track_template.format(quote(artist_name))
+                with urlopen(url) as connection:
+                    artist_data = json.loads(connection.read().decode())
+                lastfmcache[key] = artist_data
+        except Exception as e:
+            logging.warning("Last.FM exception %s", e)
+            negativeCache[key] = True
 
 
 def bestImage(lastfmdata):

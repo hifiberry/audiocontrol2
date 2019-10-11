@@ -28,7 +28,7 @@ from ac2.metadata import MetadataDisplay
 import pylast
 
 
-class LastFMDisplay(MetadataDisplay):
+class LastFMScrobbler(MetadataDisplay):
 
     def __init__(self, API_KEY, API_SECRET,
                  lastfm_username, lastfm_password,

@@ -37,7 +37,7 @@ from _collections import OrderedDict
 
 from ac2.mpris import MPRISController
 from ac2.metadata import lastfmuser
-from ac2.lastfm import LastFMDisplay
+from ac2.lastfm import LastFMScrobbler
 from ac2.webserver import AudioControlWebserver
 from ac2.alsavolume import ALSAVolume
 
@@ -121,7 +121,7 @@ def parse_config(debugmode=False):
     else:
         logging.error("web server disabled")
 
-    # LastFMDisplay/LibreFM
+    # LastFMScrobbler/LibreFM
     if "lastfm" in config.sections():
         network = config.get("lastfm", "network",
                              fallback="lastfm").lower()
@@ -148,7 +148,7 @@ def parse_config(debugmode=False):
                 password = None
                 anon = True
             try:
-                lastfmdisplay = LastFMDisplay(apikey,
+                lastfmdisplay = LastFMScrobbler(apikey,
                                               apisecret,
                                               username,
                                               password,
@@ -297,7 +297,7 @@ def parse_config(debugmode=False):
                               e)
 
     if debugmode:
-        from ac2.metadata import DummyMetadataCreator
+        from ac2.dev.dummydata import DummyMetadataCreator
         dummy = DummyMetadataCreator(server, interval=3)
         dummy.start()
 
