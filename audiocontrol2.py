@@ -186,7 +186,7 @@ def parse_config(debugmode=False):
         server.set_radio_stations(stations)
 
     # Volume
-    volctl = False
+    volume_control = None
     if "volume" in config.sections():
         mixer_name = config.get("volume",
                                 "mixer_control",
@@ -202,9 +202,7 @@ def parse_config(debugmode=False):
             volume_control.start()
             watchdog.add_monitored_thread(volume_control, "volume control")
 
-            volctl = True
-
-    if not(volctl):
+    if volume_control is None:
         logging.info("volume control not configured, "
                      "disabling volume control support")
 
@@ -249,6 +247,33 @@ def parse_config(debugmode=False):
 
             metadata_pusher = MetadataHTTPRequest(url)
             mpris.register_metadata_display(metadata_pusher)
+
+    # Metadata push to GUI
+    if "volume_post" in config.sections():
+        moduleok = False
+        try:
+            from ac2.plugins.volume.http import VolumeHTTPRequest
+            moduleok = True
+        except Exception as e:
+            logging.error("can't activate volume_post: %s", e)
+
+        if volume_control is None:
+            logging.info("volume control not configured, "
+                         "can't use volume_post")
+            moduleok = False
+
+        if moduleok:
+            url = config.get("volume_post",
+                             "url",
+                             fallback=None)
+
+            if url is None:
+                logging.error("can't activate volume_post, url missing")
+            else:
+                logging.info("posting volume changes to %s", url)
+
+            volume_pusher = VolumeHTTPRequest(url)
+            volume_control.add_listener(volume_pusher)
 
     # Plugins
     if "plugins" in config.sections():

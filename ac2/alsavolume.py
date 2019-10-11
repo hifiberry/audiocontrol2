@@ -76,6 +76,7 @@ class ALSAVolume(threading.Thread):
             self.volume = vol
             for listener in self.listeners:
                 try:
+                    logging.error("%s", listener)
                     listener.update_volume(vol)
                 except Exception as e:
                     logging.debug("exception %s during %s.volume_changed_percent",
