@@ -22,8 +22,11 @@ SOFTWARE.
 
 import logging
 import os
+import time
+import signal
 
 player_mapping = {}
+monitored_threads = {}
 
 
 def restart_service(service_name):
@@ -33,3 +36,20 @@ def restart_service(service_name):
             os.system(cmd)
     else:
         logging.warning("don't know how to restart %s", service_name)
+
+
+def add_monitored_thread(thread, name):
+    monitored_threads[name] = thread
+
+
+def monitor_threads_and_exit():
+    all_alive = True
+    while all_alive:
+        time.sleep(5)
+        for threadname in monitored_threads:
+            thread = monitored_threads[threadname]
+            if not(thread.is_alive()):
+                logging.error("Monitored thread %s died, exiting...", threadname)
+                all_alive = False
+
+    os.kill(os.getpid(), signal.SIGINT)
