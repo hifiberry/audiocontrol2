@@ -51,6 +51,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.radio_stations = None
         self.volume_control = None
         self.volume = 0
+        self.thread = None
 
         # TODO: debug code
         self.websockets = set()
@@ -271,6 +272,26 @@ class AudioControlWebserver(MetadataDisplay):
     # ##
 
     # ##
+    # ##  thread methods
+    # ##
+
+    def start(self):
+        self.thread = threading.Thread(target=self.startServer, args=())
+        self.thread.daemon = True
+        self.thread.start()
+        logging.info("started web server on port {}".format(self.port))
+
+    def is_alive(self):
+        if self.thread is None:
+            return True
+        else:
+            return self.thread.is_alive()
+
+    # ##
+    # ##  end thread methods
+    # ##
+
+    # ##
     # ## controller functions
     # ##
 
@@ -279,12 +300,6 @@ class AudioControlWebserver(MetadataDisplay):
 
     def set_player_control(self, playercontrol):
         self.player_control = playercontrol
-
-    def start(self):
-        thread = threading.Thread(target=self.startServer, args=())
-        thread.daemon = True
-        thread.start()
-        logging.info("started web server on port {}".format(self.port))
 
     def send_command(self, command, params=None):
         if command == "love":
