@@ -66,15 +66,6 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/radio',
                           method="GET",
                           callback=self.radio_handler)
-        self.bottle.route('/network',
-                          method="GET",
-                          callback=self.networkconfig_handler)
-        self.bottle.route('/wifiscan',
-                          method="GET",
-                          callback=self.wifiscan_handler)
-        self.bottle.route('/configurenetwork',
-                          method="POST",
-                          callback=self.configurenetwork_handler)
         self.bottle.route('/websocket',
                           method="GET",
                           callback=self.websocket_handler,
@@ -196,23 +187,6 @@ class AudioControlWebserver(MetadataDisplay):
         data["volume"] = self.volume
 
         return template('tpl/index.html', data)
-
-    def networkconfig_handler(self):
-        data = network.get_current_config()
-        data["systemname"] = "hifiberry"
-
-        print(data)
-        return template('tpl/network.html', data)
-
-    def wifiscan_handler(self):
-        data = network.find_networks()
-        # TODO: sort by strength
-        return data
-
-    def configurenetwork_handler(self):
-        data = network.find_networks()
-        # TODO: sort by strength
-        return data
 
     def radio_handler(self):
         url = request.query.stationurl
