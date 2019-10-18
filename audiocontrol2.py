@@ -332,5 +332,7 @@ def main():
     # mpris.print_players()
     mpris.main_loop()
 
+    logging.info("Main thread stopped")
+
 
 main()
