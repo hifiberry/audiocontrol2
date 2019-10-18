@@ -25,6 +25,7 @@ from expiringdict import ExpiringDict
 import json
 from urllib.parse import quote
 from urllib.request import urlopen
+from pylast import Album
 
 lastfmuser = None
 
@@ -131,7 +132,7 @@ track_template = "http://ws.audioscrobbler.com/2.0/?" \
 
 artist_template = "http://ws.audioscrobbler.com/2.0/?" \
     "method=artist.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
-    "&artist={}&format=json{}"
+    "&artist={}&format=json"
 
 
 def enrich_metadata_from_lastfm(metadata):
@@ -212,9 +213,10 @@ def artistInfo(artist_name):
     else:
         try:
             if negativeCache.get(key) is None:
-                url = track_template.format(quote(artist_name))
+                url = artist_template.format(quote(artist_name))
                 with urlopen(url) as connection:
                     artist_data = json.loads(connection.read().decode())
+                return artist_data
                 lastfmcache[key] = artist_data
         except Exception as e:
             logging.warning("Last.FM exception %s", e)
@@ -222,8 +224,16 @@ def artistInfo(artist_name):
 
 
 def bestImage(lastfmdata):
+    if "album" in lastfmdata:
+        key = "album"
+    elif "artist" in lastfmdata:
+        key = "artist"
+    else:
+        logging.error("can't parse lastfmdata")
+        return
+
     try:
-        urls = lastfmdata["album"]["image"]
+        urls = lastfmdata[key]["image"]
         res = {}
         for u in urls:
             res[u["size"]] = u["#text"]
@@ -236,4 +246,6 @@ def bestImage(lastfmdata):
         return None
 
     except KeyError:
+        logging.info("couldn't find any images")
         pass
+
