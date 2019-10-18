@@ -25,6 +25,7 @@ import time
 import logging
 import datetime
 import copy
+from random import randint
 
 from ac2.metadata import Metadata
 # from ac2.controller import PlayerController
@@ -303,6 +304,13 @@ class MPRISController():
                     if len(active_players) > 1:
                         if p in active_players:
                             active_players.remove(p)
+
+                    # update metadata for stopped players from time to time
+                    i = randint(0, 600)
+                    if (i == 0):
+                        md = self.retrieveMeta(p)
+                        md.playerState = state
+                        self.state_table[p].metadata = md
 
             self.playing = playing
 
