@@ -52,4 +52,6 @@ def monitor_threads_and_exit():
                 logging.error("Monitored thread %s died, exiting...", threadname)
                 all_alive = False
 
-    os.kill(os.getpid(), signal.SIGINT)
+    os.kill(os.getpid(), signal.SIGTERM)
+    time.sleep(5)
+    os.kill(os.getpid(), signal.SIGKILL)
