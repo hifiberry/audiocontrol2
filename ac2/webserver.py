@@ -32,8 +32,6 @@ from bottle.ext.websocket import GeventWebSocketServer, websocket
 
 from ac2.metadata import Metadata, MetadataDisplay, enrich_metadata
 
-import hifiberryos.network as network
-
 
 class AudioControlWebserver(MetadataDisplay):
 
