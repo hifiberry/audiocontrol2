@@ -26,7 +26,7 @@ import requests
 import logging
 from ac2.metadata import enrich_metadata
 import os
-import urllib
+import urllib.parse
 
 
 class MetadataHTTPRequest(MetadataDisplay):
