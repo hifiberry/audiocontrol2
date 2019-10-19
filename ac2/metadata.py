@@ -53,6 +53,7 @@ class Metadata:
         self.mbid = None
         self.loved = None
         self.wiki = None
+        self.loveSupported = False
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
@@ -141,6 +142,7 @@ def enrich_metadata_from_lastfm(metadata):
     userparam = ""
     if lastfmuser is not None:
         userparam = "&user={}".format(quote(lastfmuser))
+        metadata.loveSupported = True
 
     trackdata = None
 
