@@ -44,6 +44,7 @@ from ac2.alsavolume import ALSAVolume
 from ac2 import watchdog
 
 mpris = MPRISController()
+startup_command = None
 
 
 def pause_all(signalNumber=None, frame=None):
@@ -296,6 +297,10 @@ def parse_config(debugmode=False):
                               metadata_plugin,
                               e)
 
+    # Other system settings
+    global startup_command
+    startup_command = config.get("system", "startup-finished", fallback=None)
+
     if debugmode:
         from ac2.dev.dummydata import DummyMetadataCreator
         dummy = DummyMetadataCreator(server, interval=3)
@@ -328,6 +333,10 @@ def main():
 
     signal.signal(signal.SIGUSR1, pause_all)
     signal.signal(signal.SIGUSR2, print_state)
+
+    logging.info("startup finished")
+    if startup_command is not None:
+        os.system(startup_command)
 
     # mpris.print_players()
     mpris.main_loop()
