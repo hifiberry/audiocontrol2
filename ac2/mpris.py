@@ -377,7 +377,6 @@ class MPRISController():
         String representation of the current state: all players,
         playback state and meta data
         """
-        logging.error("1")
         res = ""
         for p in self.state_table:
             res = res + "{:30s} - {:10s}: {}/{}\n".format(
@@ -391,7 +390,6 @@ class MPRISController():
         return res
 
     def states(self):
-        logging.error("2")
         players = []
         for p in self.state_table:
             player = {}
