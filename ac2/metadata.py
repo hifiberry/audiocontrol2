@@ -25,9 +25,13 @@ from expiringdict import ExpiringDict
 import json
 from urllib.parse import quote
 from urllib.request import urlopen
-from pylast import Album
 
 lastfmuser = None
+
+
+def set_lastfmuser(username):
+    global lastfmuser
+    lastfmuser = username
 
 
 class Metadata:
@@ -143,6 +147,9 @@ def enrich_metadata_from_lastfm(metadata):
     if lastfmuser is not None:
         userparam = "&user={}".format(quote(lastfmuser))
         metadata.loveSupported = True
+        logging.error("Love supported")
+    else:
+        logging.error("Love unsupported")
 
     trackdata = None
 

@@ -36,7 +36,7 @@ import threading
 from _collections import OrderedDict
 
 from ac2.mpris import MPRISController
-from ac2.metadata import lastfmuser
+from ac2.metadata import set_lastfmuser
 from ac2.lastfm import LastFMScrobbler
 from ac2.webserver import AudioControlWebserver
 from ac2.alsavolume import ALSAVolume
@@ -159,7 +159,7 @@ def parse_config(debugmode=False):
                 if not(anon):
                     mpris.register_metadata_display(lastfmdisplay)
                     logging.info("scrobbling to %s", network)
-                    lastfmuser = username
+                    set_lastfmuser(username)
 
                 if server is not None:
                     server.set_lastfm_network(lastfmdisplay.network)
