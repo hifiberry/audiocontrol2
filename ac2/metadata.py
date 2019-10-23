@@ -147,9 +147,9 @@ def enrich_metadata_from_lastfm(metadata):
     if lastfmuser is not None:
         userparam = "&user={}".format(quote(lastfmuser))
         metadata.loveSupported = True
-        logging.error("Love supported")
+        logging.debug("Love supported")
     else:
-        logging.error("Love unsupported")
+        logging.debug("Love unsupported")
 
     trackdata = None
 
