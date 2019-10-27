@@ -149,23 +149,23 @@ def parse_config(debugmode=False):
                 password = None
                 anon = True
             try:
-                lastfmdisplay = LastFMScrobbler(apikey,
+                lastfmscrobbler = LastFMScrobbler(apikey,
                                               apisecret,
                                               username,
                                               password,
                                               None,
                                               network)
-                lastfmdisplay.network.enable_caching()
+                lastfmscrobbler.network.enable_caching()
                 if not(anon):
-                    mpris.register_metadata_display(lastfmdisplay)
+                    mpris.register_metadata_display(lastfmscrobbler)
                     logging.info("scrobbling to %s", network)
                     set_lastfmuser(username)
 
                 if server is not None:
-                    server.set_lastfm_network(lastfmdisplay.network)
+                    server.set_lastfm_network(lastfmscrobbler.network)
 
             except Exception as e:
-                logging.error(e)
+                logging.error("error setting up lastfm module: %s", e)
 
     else:
         logging.info("Last.FM not configured")
