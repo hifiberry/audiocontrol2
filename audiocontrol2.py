@@ -142,30 +142,32 @@ def parse_config(debugmode=False):
 
         if network is not None:
             anon = False
-            if username is None or \
-                    password is None:
-                logging.info("using %s anonymously", network)
+            if username is None or username == "" or \
+                    password is None or password == "":
+                logging.info("using %s anonymously, not scrobbling", network)
                 username = None
                 password = None
                 anon = True
-            try:
-                lastfmscrobbler = LastFMScrobbler(apikey,
-                                              apisecret,
-                                              username,
-                                              password,
-                                              None,
-                                              network)
-                lastfmscrobbler.network.enable_caching()
-                if not(anon):
+
+            if not(anon):
+                try:
+                    lastfmscrobbler = LastFMScrobbler(apikey,
+                                                  apisecret,
+                                                  username,
+                                                  password,
+                                                  None,
+                                                  network)
+                    lastfmscrobbler.network.enable_caching()
+
                     mpris.register_metadata_display(lastfmscrobbler)
-                    logging.info("scrobbling to %s", network)
+                    logging.info("scrobbling to %s as %s", network, username)
                     set_lastfmuser(username)
 
-                if server is not None:
-                    server.set_lastfm_network(lastfmscrobbler.network)
+                    if server is not None:
+                        server.set_lastfm_network(lastfmscrobbler.network)
 
-            except Exception as e:
-                logging.error("error setting up lastfm module: %s", e)
+                except Exception as e:
+                    logging.error("error setting up lastfm module: %s", e)
 
     else:
         logging.info("Last.FM not configured")
