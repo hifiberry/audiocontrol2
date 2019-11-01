@@ -231,14 +231,8 @@ def parse_config(debugmode=False):
 
     # Metadata push to GUI
     if "metadata_post" in config.sections():
-        moduleok = False
         try:
             from ac2.plugins.metadata.http import MetadataHTTPRequest
-            moduleok = True
-        except Exception as e:
-            logging.error("can't activate metadata_post: %s", e)
-
-        if moduleok:
             url = config.get("metadata_post",
                              "url",
                              fallback=None)
@@ -251,21 +245,17 @@ def parse_config(debugmode=False):
             metadata_pusher = MetadataHTTPRequest(url)
             mpris.register_metadata_display(metadata_pusher)
 
+        except Exception as e:
+            logging.error("can't activate metadata_post: %s", e)
+
     # Metadata push to GUI
     if "volume_post" in config.sections():
-        moduleok = False
-        try:
-            from ac2.plugins.volume.http import VolumeHTTPRequest
-            moduleok = True
-        except Exception as e:
-            logging.error("can't activate volume_post: %s", e)
-
         if volume_control is None:
             logging.info("volume control not configured, "
                          "can't use volume_post")
-            moduleok = False
 
-        if moduleok:
+        try:
+            from ac2.plugins.volume.http import VolumeHTTPRequest
             url = config.get("volume_post",
                              "url",
                              fallback=None)
@@ -277,6 +267,31 @@ def parse_config(debugmode=False):
 
             volume_pusher = VolumeHTTPRequest(url)
             volume_control.add_listener(volume_pusher)
+
+        except Exception as e:
+            logging.error("can't activate volume_post: %s", e)
+
+    # Postgresql scrobbler
+    logging.error("postgres start")
+    if "postgres" in config.sections():
+        try:
+            from ac2.plugins.metadata.postgresql import MetadataPostgres
+            postgres_scrobbler = MetadataPostgres()
+
+            postgres_scrobbler.user = config.get("postgres",
+                                                 "user",
+                                                 fallback="hifiberry")
+            postgres_scrobbler.password = config.get("postgres",
+                                                     "password",
+                                                     fallback="hbos2019")
+
+            mpris.register_metadata_display(postgres_scrobbler)
+            logging.info("enabled logging to Postgres")
+
+        except Exception as e:
+            logging.error("can't activate postgres: %s", e)
+
+    logging.error("postgres ready")
 
     # Plugins
     if "plugins" in config.sections():
@@ -313,11 +328,11 @@ def main():
 
     if len(sys.argv) > 1:
         if "-v" in sys.argv:
-            logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+            logging.basicConfig(format='%(levelname)s: %(module)s - %(message)s',
                                 level=logging.DEBUG)
             logging.debug("enabled verbose logging")
     else:
-        logging.basicConfig(format='%(levelname)s: %(name)s - %(message)s',
+        logging.basicConfig(format='%(levelname)s: %(module)s - %(message)s',
                             level=logging.INFO)
 
     if ('DEBUG' in os.environ):
