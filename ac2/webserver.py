@@ -23,9 +23,12 @@ SOFTWARE.
 import logging
 import threading
 import json
+import copy
+import os
+import urllib.parse
 from bottle import Bottle, static_file, request, response
 
-from ac2.metadata import Metadata, MetadataDisplay
+from ac2.metadata import Metadata, MetadataDisplay, enrich_metadata
 
 
 class AudioControlWebserver(MetadataDisplay):
@@ -216,7 +219,31 @@ class AudioControlWebserver(MetadataDisplay):
     # ## metadata functions
     # ##
     def notify(self, metadata):
+        # Create a copy, because we might modify the artUrl
+        metadata = copy.copy(metadata)
         self.metadata = metadata
+        localfile = None
+
+        enrich_metadata(metadata)
+
+        if metadata.artUrl is None:
+            metadata.artUrl = "static/unknown.png"
+
+        elif metadata.artUrl.startswith("file://"):
+            localfile = metadata.artUrl[7:]
+        else:
+            url = urllib.parse.urlparse(metadata.artUrl, scheme="file")
+            if url.scheme == "file":
+                localfile = url.path
+
+        if localfile is not None:
+            if os.path.isfile(localfile):
+                self.artworkfile = localfile
+                # use only file part of path name
+                metadata.artUrl = "artwork/" + \
+                    os.path.split(localfile)[1]
+            else:
+                metadata.artUrl = "static/unknown.png"
 
     def update_volume(self, vol):
         self.volume = vol
