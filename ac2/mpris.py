@@ -33,7 +33,7 @@ from ac2 import watchdog
 from ac2.helpers import array_to_string
 
 PLAYING = "playing"
-PAUSED = "playing"
+PAUSED = "pauses"
 
 mpris = None
 

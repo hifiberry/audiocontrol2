@@ -60,6 +60,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/api/player/status',
                           method="GET",
                           callback=self.playerstatus_handler)
+        self.bottle.route('/api/player/playing',
+                          method="GET",
+                          callback=self.playerplaying_handler)
         self.bottle.route('/api/player/<command>',
                           method="POST",
                           callback=self.playercontrol_handler)
@@ -80,6 +83,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.run(port=self.port,
                         host=self.host,
                         debug=self.debug)
+
+    def set_lastfm_network(self, network):
+        self.lastfm_network = network
 
     # ##
     # ## begin URL handlers
@@ -106,6 +112,21 @@ class AudioControlWebserver(MetadataDisplay):
         states = self.player_control.states()
 
         return (states)
+
+    def playerplaying_handler(self):
+
+        if self.player_control is None:
+            response.status = 501
+            return "no player control available"
+
+        playing = False
+        for state in self.player_control.states()["players"]:
+            logging.error("State %s", state)
+            if state["state"].lower() == "playing":
+                playing = True
+                break
+
+        return ({"playing": playing})
 
     def metadata_handler(self):
         print(self.metadata)
