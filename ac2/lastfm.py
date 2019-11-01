@@ -69,7 +69,7 @@ class LastFMScrobbler(MetadataDisplay):
         if listening_time > 30:
             md = self.current_metadata
         else:
-            logging.debug("not yes logging %s, not listened for at least 30s",
+            logging.debug("not yet logging %s, not listened for at least 30s",
                           metadata)
             md = None
 
