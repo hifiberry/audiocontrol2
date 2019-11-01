@@ -233,7 +233,7 @@ def enrich_metadata_from_lastfm(metadata):
             tags = []
             for tag in trackdata["toptags"]["tag"]:
                 tagname = tag["name"]
-                tags.append(tagname)
+                tags.append(tagname.lower())
             logging.debug("adding tags from Last.FM: %s", tags)
             metadata.tags = tags
 
