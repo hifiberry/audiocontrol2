@@ -90,8 +90,12 @@ class MPRISController():
 
     def metadata_notify(self, metadata):
         for md in self.metadata_displays:
-            logging.debug("metadata_notify: %s %s", md, metadata)
-            md.notify(copy.copy(metadata))
+            try:
+                logging.debug("metadata_notify: %s %s", md, metadata)
+                md.notify(copy.copy(metadata))
+            except Exception as e:
+                logging.warn("could not notify {}: {}", md, e)
+
         self.metadata = metadata
 
     def connect_dbus(self):
