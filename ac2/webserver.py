@@ -23,14 +23,9 @@ SOFTWARE.
 import logging
 import threading
 import json
-import os
-import copy
-import urllib.parse
+from bottle import Bottle, static_file, request, response
 
-from bottle import Bottle, template, static_file, request, response
-from bottle.ext.websocket import GeventWebSocketServer, websocket
-
-from ac2.metadata import Metadata, MetadataDisplay, enrich_metadata
+from ac2.metadata import Metadata, MetadataDisplay
 
 
 class AudioControlWebserver(MetadataDisplay):
@@ -51,23 +46,11 @@ class AudioControlWebserver(MetadataDisplay):
         self.volume = 0
         self.thread = None
 
-        # TODO: debug code
-        self.websockets = set()
         self.notify(Metadata("Artist", "Title", "Album"))
 
         # Last.FM API to access additional track data
 
     def route(self):
-        self.bottle.route('/',
-                          method="GET",
-                          callback=self.index_handler)
-        self.bottle.route('/radio',
-                          method="GET",
-                          callback=self.radio_handler)
-        self.bottle.route('/websocket',
-                          method="GET",
-                          callback=self.websocket_handler,
-                          apply=websocket)
         self.bottle.route('/static/<filename>',
                           method="GET",
                           callback=self.static_handler)
@@ -96,8 +79,7 @@ class AudioControlWebserver(MetadataDisplay):
     def startServer(self):
         self.bottle.run(port=self.port,
                         host=self.host,
-                        debug=self.debug,
-                        server=GeventWebSocketServer)
+                        debug=self.debug)
 
     # ##
     # ## begin URL handlers
@@ -172,66 +154,12 @@ class AudioControlWebserver(MetadataDisplay):
 
         return ({"percent":self.volume_control.current_volume()})
 
-    def index_handler(self):
-        data = vars(self.metadata)
-        # Check if LastFM is configured for a specific user and
-        # enable/disable favorite feature
-        if (self.lastfm_network is not None) and (
-                self.lastfm_network.username is not None):
-            data["support_favorites"] = 1
-        else:
-            data["support_favorites"] = 0
-
-        data["volume"] = self.volume
-
-        return template('tpl/index.html', data)
-
-    def radio_handler(self):
-        url = request.query.stationurl
-        if url is None or url == "":
-            return template('tpl/radio.html',
-                            {"stations": self.radio_stations})
-        else:
-            # Open URL using mpc
-            logging.info("opening radio URL %s using mpc", url)
-            commands = ["clear", "add {}", "play"]
-            for cmd in commands:
-                mycmd = "mpc {}".format(cmd.format(url))
-                err = os.system(mycmd)
-                if err:
-                    logging.error("command %s failed with error %s",
-                                  mycmd, err)
-
     def status_handler(self):
         response.content_type = 'text/plain; charset=UTF8'
         if self.player_control is not None:
             return "status\n\n{}".format(self.player_control)
         else:
             return "not connected to a player control"
-
-    def websocket_handler(self, ws):
-        print(ws)
-        self.websockets.add(ws)
-        print("connected new web socket, now {} clients".format(
-            len(self.websockets)))
-        while True:
-            msg = ws.receive()
-            if msg is None:
-                self.websockets.remove(ws)
-                logging.error("web socket closed")
-                break
-
-            parsed = json.loads(msg)
-            try:
-                command = parsed["command"].lower()
-                if "params" in parsed:
-                    params = parsed["params"]
-                else:
-                    params = None
-                self.send_command(command, params)
-            except:
-                logging.error("can't parse command %s", msg)
-                continue
 
     def static_handler(self, filename):
         return static_file(filename, root='static')
@@ -260,7 +188,20 @@ class AudioControlWebserver(MetadataDisplay):
             return self.thread.is_alive()
 
     # ##
-    # ##  end thread methods
+    # ## end thread methods
+    # ##
+
+    # ##
+    # ## metadata functions
+    # ##
+    def notify(self, metadata):
+        self.metadata = metadata
+
+    def update_volume(self, vol):
+        self.volume = vol
+
+    # ##
+    # ## end metadata functions
     # ##
 
     # ##
@@ -341,70 +282,6 @@ class AudioControlWebserver(MetadataDisplay):
     # ##
     # ## end controller functions
     # ##
-
-    # ##
-    # ##  metadata functions
-    # ##
-
-    def notify(self, metadata):
-        # Create a copy, because we might modify the artUrl
-        metadata = copy.copy(metadata)
-        self.metadata = metadata
-        localfile = None
-
-        enrich_metadata(metadata)
-
-        if metadata.artUrl is None:
-            metadata.artUrl = "static/unknown.png"
-
-        elif metadata.artUrl.startswith("file://"):
-            localfile = metadata.artUrl[7:]
-        else:
-            url = urllib.parse.urlparse(metadata.artUrl, scheme="file")
-            if url.scheme == "file":
-                localfile = url.path
-
-        if localfile is not None:
-            if os.path.isfile(localfile):
-                self.artworkfile = localfile
-                # use only file part of path name
-                metadata.artUrl = "artwork/" + \
-                    os.path.split(localfile)[1]
-            else:
-                metadata.artUrl = "static/unknown.png"
-
-        self.send_websocket_update(vars(metadata))
-
-    # ##
-    # ##  metadata functions
-    # ##
-
-    def update_volume(self, vol):
-        self.volume = vol
-        self.send_websocket_update({"volume": vol})
-
-    def send_websocket_update(self, dictionary):
-        md_json = json.dumps(dictionary)
-
-        # It's necessary to create a copy as the set might be modified here
-
-        for ws in self.websockets.copy():
-
-            try:
-                ws.send(md_json)
-            except Exception as e:
-                # Web socket might be dead
-                try:
-                    print("remove ws" + e)
-                    self.websockets.remove(ws)
-                except:
-                    pass
-
-    def set_lastfm_network(self, lastfm_network):
-        self.lastfm_network = lastfm_network
-
-    def set_radio_stations(self, stations):
-        self.radio_stations = stations
 
     def __str__(self):
         return "webserver@{}".format(self.port)
