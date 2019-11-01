@@ -64,20 +64,20 @@ class Metadata:
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
-            return NotImplemented
+            return False
 
         return self.artist == other.artist and \
             self.title == other.title
 
     def sameArtwork(self, other):
         if not isinstance(other, Metadata):
-            return NotImplemented
+            return False
 
         return self.artUrl == other.artUrl
 
     def __eq__(self, other):
         if not isinstance(other, Metadata):
-            return NotImplemented
+            return False
 
         return self.artist == other.artist and \
             self.title == other.title and \
@@ -88,7 +88,7 @@ class Metadata:
 
     def __ne__(self, other):
         if not isinstance(other, Metadata):
-            return NotImplemented
+            return True
 
         return not(self.__eq__(other))
 
