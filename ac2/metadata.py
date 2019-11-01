@@ -55,6 +55,8 @@ class Metadata:
         self.playerState = playerState
         self.playCount = None
         self.mbid = None
+        self.artistmbid = None
+        self.albummbid = None
         self.loved = None
         self.wiki = None
         self.loveSupported = False
@@ -182,6 +184,16 @@ def enrich_metadata_from_lastfm(metadata):
 
         trackdata = trackdata["track"]
 
+        if metadata.artistmbid is None:
+            if "artist" in trackdata and "mbid" in trackdata["artist"]:
+                    metadata.artistmbid = trackdata["artist"]["mbid"]
+                    logging.debug("artistmbid=%s", metadata.artistmbid)
+
+        if metadata.albummbid is None:
+            if "album" in trackdata and "mbid" in trackdata["album"]:
+                    metadata.artistmbid = trackdata["album"]["mbid"]
+                    logging.debug("albummbid=%s", metadata.artistmbid)
+
         if metadata.artUrl is None:
 
             if metadata.artUrl is None:
@@ -206,11 +218,16 @@ def enrich_metadata_from_lastfm(metadata):
             metadata.mbid = trackdata["mbid"]
             logging.debug("mbid=%s", metadata.mbid)
 
+        if metadata.mbid is None and "mbid" in trackdata:
+            metadata.mbid = trackdata["mbid"]
+            logging.debug("mbid=%s", metadata.mbid)
+
         if metadata.loved is None and "userloved" in trackdata:
             metadata.loved = (int(trackdata["userloved"]) > 0)
 
         if metadata.wiki is None and "wiki" in trackdata:
             metadata.wiki = trackdata["wiki"]
+            logging.debug("found Wiki entry")
 
         if metadata.tags is None and "toptags" in trackdata:
             tags = []
