@@ -238,8 +238,9 @@ def enrich_metadata_from_lastfm(metadata):
         if metadata.tags is None and "toptags" in trackdata:
             tags = []
             for tag in trackdata["toptags"]["tag"]:
-                tagname = tag["name"]
-                tags.append(tagname.lower())
+                tagname = tag["name"].lower().replace("-", " ")
+                if not(tagname in tags):
+                    tags.append(tagname)
             logging.debug("adding tags from Last.FM: %s", tags)
             metadata.tags = tags
 
