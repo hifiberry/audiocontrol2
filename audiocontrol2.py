@@ -37,7 +37,7 @@ from _collections import OrderedDict
 
 from ac2.mpris import MPRISController
 from ac2.metadata import set_lastfmuser
-from ac2.lastfm import LastFMScrobbler
+from ac2.plugins.metadata.lastfm import LastFMScrobbler
 from ac2.webserver import AudioControlWebserver
 from ac2.alsavolume import ALSAVolume
 
@@ -116,6 +116,7 @@ def parse_config(debugmode=False):
         server = AudioControlWebserver(port=port, debug=debugmode)
         mpris.register_metadata_display(server)
         server.set_player_control(mpris)
+        server.add_updater(mpris)
         server.start()
         watchdog.add_monitored_thread(server, "webserver")
         logging.info("started web server on port %s", port)
@@ -157,14 +158,13 @@ def parse_config(debugmode=False):
                                                   password,
                                                   None,
                                                   network)
-                    lastfmscrobbler.network.enable_caching()
 
                     mpris.register_metadata_display(lastfmscrobbler)
                     logging.info("scrobbling to %s as %s", network, username)
                     set_lastfmuser(username)
 
                     if server is not None:
-                        server.set_lastfm_network(lastfmscrobbler.network)
+                        server.add_lover(lastfmscrobbler)
 
                 except Exception as e:
                     logging.error("error setting up lastfm module: %s", e)

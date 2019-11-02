@@ -30,32 +30,62 @@ import pylast
 
 class LastFMScrobbler(MetadataDisplay):
 
-    def __init__(self, API_KEY, API_SECRET,
-                 lastfm_username, lastfm_password,
-                 lastfm_password_hash=None,
+    def __init__(self, api_key, api_secret,
+                 username, password,
+                 password_hash=None,
                  network="lastfm"):
-        if lastfm_password_hash is None:
-            lastfm_password_hash = pylast.md5(lastfm_password)
+        if password_hash is None:
+            password_hash = pylast.md5(password)
 
-        network = network.lower()
-
-        if network == "lastfm":
-            self.network = pylast.LastFMNetwork(
-                api_key=API_KEY,
-                api_secret=API_SECRET,
-                username=lastfm_username,
-                password_hash=lastfm_password_hash)
-        elif network == "librefm":
-            self.network = pylast.LibreFMNetwork(
-                api_key=API_KEY,
-                api_secret=API_SECRET,
-                username=lastfm_username,
-                password_hash=lastfm_password_hash)
-        else:
-            raise RuntimeError("Network {} unknown".format(network))
+        self.username = username
+        self.password_hash = password_hash
+        self.networkname = network.lower()
+        self.api_key = api_key
+        self.api_secret = api_secret
 
         self.current_metadata = None
         self.starttime = 0
+        self.network = None
+
+    def get_network(self):
+        if self.network is not None:
+            return self.network
+
+        if self.networkname == "lastfm":
+            self.network = pylast.LastFMNetwork(
+                api_key=self.api_key,
+                api_secret=self.api_secret,
+                username=self.username,
+                password_hash=self.password_hash)
+        elif self.netnetworkname == "librefm":
+            self.network = pylast.LibreFMNetwork(
+                api_key=self.api_key,
+                api_secret=self.api_secret,
+                username=self.username,
+                password_hash=self.password_hash)
+        else:
+            raise RuntimeError("Network {} unknown".format(self.networkname))
+
+        if self.network is not None:
+            self.network.enable_caching()
+
+        return self.network
+
+    def love(self, love):
+        try:
+            track = self.get_network().get_track(self.current_metadata.artist,
+                                                 self.current_metadata.title)
+            if love:
+                logging.info("sending love to Last.FM")
+                track.love()
+            else:
+                logging.info("sending unlove to Last.FM")
+                track.unlove()
+        except Exception as e:
+            logging.warning("got exception %s while love/unlove", e)
+            return False
+
+        return True
 
     def notify(self, metadata):
         """
@@ -84,7 +114,7 @@ class LastFMScrobbler(MetadataDisplay):
                 logging.info("scrobbling " + str(md))
                 unix_timestamp = int(time.mktime(
                     datetime.datetime.now().timetuple()))
-                self.network.scrobble(artist=md.artist,
+                self.get_network.scrobble(artist=md.artist,
                                       title=md.title,
                                       timestamp=unix_timestamp)
             except Exception as e:
@@ -92,6 +122,7 @@ class LastFMScrobbler(MetadataDisplay):
                               md.artist,
                               md.title,
                               e)
+                self.network = None
 
     def __str__(self):
-        return "scrobbler@{}".format(self.network)
+        return "scrobbler@{}".format(self.networkname)

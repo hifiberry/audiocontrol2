@@ -48,6 +48,8 @@ class AudioControlWebserver(MetadataDisplay):
         self.volume_control = None
         self.volume = 0
         self.thread = None
+        self.lovers = []
+        self.updaters = []
 
         self.notify(Metadata("Artist", "Title", "Album"))
 
@@ -87,8 +89,14 @@ class AudioControlWebserver(MetadataDisplay):
                         host=self.host,
                         debug=self.debug)
 
-    def set_lastfm_network(self, network):
-        self.lastfm_network = network
+    # A "lover" is an object that can "love" or "unlove" a song.
+    def add_lover(self, lover):
+        self.lovers.append(lover)
+
+    # An "updaters" is an object that will be informed about metadata changes,
+    # e.g. love/unlove or skipped song.
+    def add_updater(self, updater):
+        self.updaters.append(updater)
 
     # ##
     # ## begin URL handlers
@@ -248,6 +256,16 @@ class AudioControlWebserver(MetadataDisplay):
     def update_volume(self, vol):
         self.volume = vol
 
+    def send_metadata_update(self, updates):
+        logging.info("hhh")
+        for u in self.updaters:
+            try:
+                logging.debug("sending update %s to %s", u, updates)
+                u.update_metadata_attributes(updates)
+                logging.debug("sent update %s to %s", u, updates)
+            except Exception as e:
+                logging.warn("couldn't send update to %s: %s", u, e)
+
     # ##
     # ## end metadata functions
     # ##
@@ -293,6 +311,7 @@ class AudioControlWebserver(MetadataDisplay):
             try:
                 if command == "next":
                     self.player_control.next()
+                    self.send_metadata_update({"skipped": True})
                 elif command == "previous":
                     self.player_control.previous()
                 elif command == "play":
@@ -312,20 +331,19 @@ class AudioControlWebserver(MetadataDisplay):
             return True
 
     def love_track(self, love):
-        try:
-            track = self.lastfm_network.get_track(self.metadata.artist,
-                                                  self.metadata.title)
-            if love:
-                logging.info("sending love to Last.FM")
-                track.love()
-            else:
-                logging.info("sending unlove to Last.FM")
-                track.love()
-        except Exception as e:
-            logging.warning("got exception %s while love/unlove", e)
-            return False
+        ok = True
 
-        return True
+        for lover in self.lovers:
+            try:
+                lover.love(love)
+            except Exception as e:
+                ok = False
+                logging.warn("Could not love/unlove via %s: %s", lover, e)
+
+        if ok:
+            self.send_metadata_update({"loved": love})
+
+        return ok
 
     # ##
     # ## end controller functions

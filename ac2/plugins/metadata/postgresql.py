@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 from ac2.metadata import MetadataDisplay
@@ -55,18 +55,24 @@ class MetadataPostgres(MetadataDisplay):
             enrich_metadata(self.currentmetadata)
             songdict = self.currentmetadata.__dict__
 
+            # Some fields are not needed
+            del songdict["wiki"]
+            del songdict["loveSupported"]
+
             songdict["started"] = self.starttimestamp.isoformat()
             songdict["finished"] = datetime.now().isoformat()
 
+            # If a song had been played for less than 10 seconds mark
+            # is as "skipped"
+            if (datetime.now() - self.starttimestamp) < timedelta(seconds=10):
+                songdict["skipped"] = True
+
             logging.debug("saving metadata to postgresql")
             self.write_metadata(songdict)
-            self.starttimestamp = None
 
-        # keep new data
-        if metadata.playerState == "playing":
-            logging.debug("started listening to a new song")
-            self.currentmetadata = metadata
-            self.starttimestamp = datetime.now()
+        logging.debug("started listening to a new song")
+        self.currentmetadata = metadata
+        self.starttimestamp = datetime.now()
 
     def write_metadata(self, songdict):
         try:

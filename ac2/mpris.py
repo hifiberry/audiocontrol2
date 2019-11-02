@@ -84,6 +84,7 @@ class MPRISController():
         self.metadata = {}
         self.playing = False
         self.connect_dbus()
+        self.metadata = None
 
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
@@ -94,7 +95,7 @@ class MPRISController():
                 logging.debug("metadata_notify: %s %s", md, metadata)
                 md.notify(copy.copy(metadata))
             except Exception as e:
-                logging.warn("could not notify {}: {}", md, e)
+                logging.warn("could not notify %s: %s", md, e)
 
         self.metadata = metadata
 
@@ -239,6 +240,15 @@ class MPRISController():
         else:
             res = self.mpris_command(MPRIS_PREFIX + playerName, command)
 
+        return res
+
+    def update_metadata_attributes(self, updates):
+        logging.debug("received metadata update: %s", updates)
+        for attribute in updates:
+            self.metadata.__dict__[attribute] = updates[attribute]
+
+        self.metadata_notify(self.metadata)
+
     def main_loop(self):
         """
         Main loop:
@@ -249,7 +259,7 @@ class MPRISController():
         finished = False
         md = Metadata()
         active_players = []
-        md_prev = None
+
         MAX_FAIL = 3
 
         while not(finished):
@@ -293,10 +303,14 @@ class MPRISController():
                     md.playerState = state
 
                     self.state_table[p].metadata = md
-                    if md != md_prev:
+                    if md != self.metadata:
                         self.metadata_notify(md)
 
-                    md_prev = md
+                    if (md.sameSong(self.metadata)):
+                        md.fill_undefined(self.metadata)
+
+                    # Store this as "current"
+                    self.metadata = md
 
                     # Even if we din't send metadata, this is still
                     # flagged
@@ -327,11 +341,10 @@ class MPRISController():
                     p)
                 md = self.retrieveMeta(p)
                 md.playerState = self.state_table[p].state
-                if md != md_prev:
+                if md != self.metadata:
                     self.metadata_notify(md)
-                    md_prev = md
 
-                md_prev = md
+                self.metadata = md
 
             if len(active_players) > 0:
                 self.active_player = active_players[0]
@@ -377,21 +390,7 @@ class MPRISController():
     # ##
 
     def __str__(self):
-        """
-        String representation of the current state: all players,
-        playback state and meta data
-        """
-        res = ""
-        for p in self.state_table:
-            res = res + "{:30s} - {:10s}: {}/{}\n".format(
-                self.playername(p),
-                self.state_table[p].state,
-                self.state_table[p].metadata.artist,
-                self.state_table[p].metadata.title)
-
-        res = res + "\nLast updated {}\n".format(self.last_update)
-
-        return res
+        return "mpris"
 
     def states(self):
         players = []

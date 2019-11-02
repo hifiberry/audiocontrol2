@@ -61,6 +61,7 @@ class Metadata:
         self.wiki = None
         self.loveSupported = False
         self.tags = None
+        self.skipped = False
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
@@ -110,6 +111,11 @@ class Metadata:
                 [title, artist] = self.title.split(", ", 1)
                 self.artist = artist
                 self.title = title
+
+    def fill_undefined(self, metadata):
+        for attrib in metadata.__dict__:
+            if attrib in self.__dict__ and self.__dict__[attrib] is None:
+                self.__dict__[attrib] = metadata.__dict__[attrib]
 
     def __str__(self):
         return "{}: {} ({}) {}".format(self.artist, self.title,
