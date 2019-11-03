@@ -26,6 +26,7 @@ import logging
 
 import ac2.data.lastfm as lastfmdata
 import ac2.data.coverartarchive as coverart
+from ac2.data.coverarthandler import best_picture_url
 
 
 class Metadata:
@@ -138,11 +139,19 @@ def enrich_metadata(metadata, callback=None):
     Add more metadata to a song based on the information that are already
     given. These will be retrieved from external sources.
     """
+
     lastfmdata.enrich_metadata_from_lastfm(metadata)
 
-    if metadata.albummbid is not None and metadata.artUrl is None:
+    if metadata.albummbid is not None:
+        mbid = metadata.albummbid
+        # Parse existing image
+        if metadata.artUrl is not None:
+            best_picture_url(mbid, metadata.artUrl)
+
         # Try to get cover from coverartarchive
-        metadata.artUrl = coverart.coverartarchive_cover(metadata.albummbid)
+        artUrl = coverart.coverartarchive_cover(metadata.albummbid)
+        if artUrl is not None:
+            metadata.artUrl = best_picture_url(mbid, artUrl)
 
     if callback is not None:
         callback.update_metadata_attributes(metadata.__dict__)

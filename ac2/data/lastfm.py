@@ -28,8 +28,8 @@ from urllib.request import urlopen
 
 lastfmuser = None
 
-lastfmcache = ExpiringDict(max_len=100,
-                           max_age_seconds=600)
+cache = ExpiringDict(max_len=100,
+                     max_age_seconds=600)
 negativeCache = ExpiringDict(max_len=100,
                              max_age_seconds=600)
 
@@ -160,7 +160,7 @@ def enrich_metadata_from_lastfm(metadata):
 def trackInfo(artist, title, userparam):
 
         key = "track/{}/{}".format(artist, title)
-        trackdata = lastfmcache.get(key)
+        trackdata = cache.get(key)
 
         if trackdata is not None:
             logging.debug("Found cached entry for %s", key)
@@ -172,7 +172,7 @@ def trackInfo(artist, title, userparam):
                                                 userparam)
                     with urlopen(url) as connection:
                         trackdata = json.loads(connection.read().decode())
-                    lastfmcache[key] = trackdata
+                    cache[key] = trackdata
             except Exception as e:
                 logging.warning("Last.FM exception %s", e)
                 negativeCache[key] = True
@@ -183,7 +183,7 @@ def trackInfo(artist, title, userparam):
 def artistInfo(artist_name):
 
     key = "artist/{}".format(artist_name)
-    artist_data = lastfmcache.get(key)
+    artist_data = cache.get(key)
 
     if artist_data is not None:
         logging.debug("Found cached entry for %s", key)
@@ -193,7 +193,7 @@ def artistInfo(artist_name):
                 url = artist_template.format(quote(artist_name))
                 with urlopen(url) as connection:
                     artist_data = json.loads(connection.read().decode())
-                lastfmcache[key] = artist_data
+                cache[key] = artist_data
         except Exception as e:
             logging.warning("Last.FM exception %s", e)
             negativeCache[key] = True
@@ -204,7 +204,7 @@ def artistInfo(artist_name):
 def albumInfo(artist_name, album_name):
 
     key = "album/{}/{}".format(artist_name, album_name)
-    album_data = lastfmcache.get(key)
+    album_data = cache.get(key)
 
     if album_data is not None:
         logging.debug("Found cached entry for %s", key)
@@ -215,7 +215,7 @@ def albumInfo(artist_name, album_name):
                                             quote(album_name))
                 with urlopen(url) as connection:
                     album_data = json.loads(connection.read().decode())
-                lastfmcache[key] = album_data
+                cache[key] = album_data
         except Exception as e:
             logging.warning("Last.FM exception %s", e)
             negativeCache[key] = True

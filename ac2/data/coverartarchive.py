@@ -59,7 +59,6 @@ def coverdata(mbid):
                 url = "http://coverartarchive.org/release/{}/".format(mbid)
                 with urlopen(url) as connection:
                     data = connection.read().decode()
-                    logging.debug("data %s", data)
                     trackdata = json.loads(data)
                 cache[mbid] = trackdata
         except HTTPError:
