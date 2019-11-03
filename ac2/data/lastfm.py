@@ -160,7 +160,7 @@ def enrich_metadata_from_lastfm(metadata):
         artistdata = artistInfo(metadata.artist)
         if artistdata is not None:
             try:
-                metadata.artistmbid = albumdata["artist"]["mbid"]
+                metadata.artistmbid = artistdata["artist"]["mbid"]
                 logging.debug("added artistmbid from Last.FM")
             except KeyError:
                 # mbid might not be available
