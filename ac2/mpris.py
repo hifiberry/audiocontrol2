@@ -26,6 +26,7 @@ import logging
 import datetime
 import copy
 from random import randint
+import threading
 
 from ac2.metadata import Metadata, enrich_metadata_bg
 # from ac2.controller import PlayerController
@@ -85,6 +86,7 @@ class MPRISController():
         self.playing = False
         self.connect_dbus()
         self.metadata = None
+        self.metadata_lock = threading.Lock()
 
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
@@ -244,8 +246,14 @@ class MPRISController():
 
     def update_metadata_attributes(self, updates):
         logging.debug("received metadata update: %s", updates)
-        for attribute in updates:
-            self.metadata.__dict__[attribute] = updates[attribute]
+
+        if self.metadata is None:
+            logging.warn("ooops, got an update, but don't have metadata")
+            return
+
+        with self.metadata_lock:
+            for attribute in updates:
+                self.metadata.__dict__[attribute] = updates[attribute]
 
         self.metadata_notify(self.metadata)
 
@@ -266,6 +274,7 @@ class MPRISController():
             new_player_started = None
             metadata_notified = False
             playing = False
+            new_song = False
 
             for p in self.retrievePlayers():
 
@@ -302,19 +311,24 @@ class MPRISController():
                     md = self.retrieveMeta(p)
                     md.playerState = state
 
-                    self.state_table[p].metadata = md
-                    if md != self.metadata:
-                        self.metadata_notify(md)
-
                     # MPRIS delivers only very few metadata, these will be
                     # enriched with external sources
                     if (md.sameSong(self.metadata)):
                         md.fill_undefined(self.metadata)
                     else:
-                        enrich_metadata_bg(md, self)
+                        new_song = True
+
+                    self.state_table[p].metadata = md
+                    if md != self.metadata:
+                        self.metadata_notify(md)
 
                     # Store this as "current"
-                    self.metadata = md
+                    with self.metadata_lock:
+                        self.metadata = md
+
+                    # Add metadata if this is a new song
+                    if new_song:
+                        enrich_metadata_bg(md, self)
 
                     # Even if we din't send metadata, this is still
                     # flagged

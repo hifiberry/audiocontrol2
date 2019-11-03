@@ -232,7 +232,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.metadata = metadata
         localfile = None
 
-        enrich_metadata(metadata)
+        # enrich_metadata(metadata)
 
         if metadata.artUrl is None:
             metadata.artUrl = "static/unknown.png"

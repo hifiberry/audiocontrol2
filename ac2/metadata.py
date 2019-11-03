@@ -22,8 +22,10 @@ SOFTWARE.
 
 import copy
 import threading
+import logging
 
 import ac2.data.lastfm as lastfmdata
+import ac2.data.coverartarchive as coverart
 
 
 class Metadata:
@@ -52,7 +54,7 @@ class Metadata:
         self.loved = None
         self.wiki = None
         self.loveSupported = False
-        self.tags = None
+        self.tags = []
         self.skipped = False
 
     def sameSong(self, other):
@@ -109,6 +111,11 @@ class Metadata:
             if attrib in self.__dict__ and self.__dict__[attrib] is None:
                 self.__dict__[attrib] = metadata.__dict__[attrib]
 
+    def add_tag(self, tag):
+        tag = tag.lower().replace("-", " ")
+        if not tag in self.tags:
+            self.tags.append(tag)
+
     def copy(self):
         return copy.copy(self)
 
@@ -127,13 +134,25 @@ class MetadataDisplay:
 
 
 def enrich_metadata(metadata, callback=None):
+    """
+    Add more metadata to a song based on the information that are already
+    given. These will be retrieved from external sources.
+    """
     lastfmdata.enrich_metadata_from_lastfm(metadata)
+
+    if metadata.albummbid is not None and metadata.artUrl is None:
+        # Try to get cover from coverartarchive
+        metadata.artUrl = coverart.coverartarchive_cover(metadata.albummbid)
+
     if callback is not None:
         callback.update_metadata_attributes(metadata.__dict__)
 
 
 def enrich_metadata_bg(metadata, callback):
 
+    logging.debug("metadata updater thread 1")
+
     md = metadata.copy()
-    threading.Thread(target=enrich_metadata, args=(md, callback)).start
+    threading.Thread(target=enrich_metadata, args=(md, callback)).start()
+    logging.debug("metadata updater thread 2")
 

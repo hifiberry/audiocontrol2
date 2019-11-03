@@ -44,7 +44,7 @@ class MetadataHTTPRequest(MetadataDisplay):
 
         localfile = None
 
-        enrich_metadata(metadata)
+        # enrich_metadata(metadata)
 
         if metadata.artUrl is not None:
             if metadata.artUrl.startswith("file://"):

@@ -56,8 +56,9 @@ class MetadataPostgres(MetadataDisplay):
             songdict = self.currentmetadata.__dict__
 
             # Some fields are not needed
-            del songdict["wiki"]
-            del songdict["loveSupported"]
+            for attrib in ["wiki", "loveSupported"]:
+                if attrib in songdict:
+                    del songdict[attrib]
 
             songdict["started"] = self.starttimestamp.isoformat()
             songdict["finished"] = datetime.now().isoformat()
@@ -76,6 +77,13 @@ class MetadataPostgres(MetadataDisplay):
 
     def write_metadata(self, songdict):
         try:
+
+            if songdict is None:
+                return
+
+            if songdict.get("artist") is None or songdict.get("title") is None:
+                logging.debug("undefined artist/title, won't store in db")
+
             from psycopg2.extras import Json
             conn = self.db_connection()
             if conn is None:

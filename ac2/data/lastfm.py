@@ -70,18 +70,35 @@ def enrich_metadata_from_lastfm(metadata):
             metadata.title is not None:
         trackdata = trackInfo(metadata.artist, metadata.title, userparam)
 
-    # Try to get a album cover
-    if metadata.artUrl is None:
-        # Get album data if album is set
-        if metadata.artist is not None and \
-                metadata.albumTitle is not None:
-            albumdata = albumInfo(metadata.artist, metadata.albumTitle)
+    # Get album data if album is set
+    if metadata.artist is not None and \
+            metadata.albumTitle is not None:
+        albumdata = albumInfo(metadata.artist, metadata.albumTitle)
 
-        if albumdata is not None:
+    if albumdata is not None:
+        if metadata.artUrl is None:
             metadata.artUrl = bestImage(albumdata)
             logging.info("Got album cover for %s/%s from Last.FM: %s",
                          metadata.artist, metadata.albumTitle,
                          metadata.artUrl)
+        else:
+            logging.debug("did not find album on Last.FM")
+
+        if metadata.albummbid is None:
+            try:
+                metadata.albummbid = albumdata["album"]["mbid"]
+                logging.debug("added albummbid from Last.FM")
+            except KeyError:
+                # mbid might not be available
+                pass
+
+        if metadata.albumArtist is None:
+            try:
+                metadata.albumartist = albumdata["album"]["artist"]
+                logging.debug("added album artist from Last.FM")
+            except KeyError:
+                # mbid might not be available
+                pass
 
     # Update track with more information
     if trackdata is not None and "track" in trackdata:
@@ -95,8 +112,8 @@ def enrich_metadata_from_lastfm(metadata):
 
         if metadata.albummbid is None:
             if "album" in trackdata and "mbid" in trackdata["album"]:
-                    metadata.artistmbid = trackdata["album"]["mbid"]
-                    logging.debug("albummbid=%s", metadata.artistmbid)
+                    metadata.albummbid = trackdata["album"]["mbid"]
+                    logging.debug("albummbid=%s", metadata.albummbid)
 
         if metadata.artUrl is None:
 
@@ -122,10 +139,6 @@ def enrich_metadata_from_lastfm(metadata):
             metadata.mbid = trackdata["mbid"]
             logging.debug("mbid=%s", metadata.mbid)
 
-        if metadata.mbid is None and "mbid" in trackdata:
-            metadata.mbid = trackdata["mbid"]
-            logging.debug("mbid=%s", metadata.mbid)
-
         if metadata.loved is None and "userloved" in trackdata:
             metadata.loved = (int(trackdata["userloved"]) > 0)
 
@@ -133,14 +146,10 @@ def enrich_metadata_from_lastfm(metadata):
             metadata.wiki = trackdata["wiki"]
             logging.debug("found Wiki entry")
 
-        if metadata.tags is None and "toptags" in trackdata:
-            tags = []
+        if "toptags" in trackdata:
             for tag in trackdata["toptags"]["tag"]:
-                tagname = tag["name"].lower().replace("-", " ")
-                if not(tagname in tags):
-                    tags.append(tagname)
-            logging.debug("adding tags from Last.FM: %s", tags)
-            metadata.tags = tags
+                metadata.add_tag(tag["name"])
+                logging.debug("adding tag from Last.FM: %s", tag["name"])
 
     else:
         logging.info("no track data for %s/%s on Last.FM",
