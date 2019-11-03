@@ -27,7 +27,7 @@ import datetime
 import copy
 from random import randint
 
-from ac2.metadata import Metadata
+from ac2.metadata import Metadata, enrich_metadata_bg
 # from ac2.controller import PlayerController
 from ac2 import watchdog
 from ac2.helpers import array_to_string
@@ -306,8 +306,12 @@ class MPRISController():
                     if md != self.metadata:
                         self.metadata_notify(md)
 
+                    # MPRIS delivers only very few metadata, these will be
+                    # enriched with external sources
                     if (md.sameSong(self.metadata)):
                         md.fill_undefined(self.metadata)
+                    else:
+                        enrich_metadata_bg(md, self)
 
                     # Store this as "current"
                     self.metadata = md
@@ -336,9 +340,6 @@ class MPRISController():
             # or stopped
             if not metadata_notified and len(active_players) > 0:
                 p = active_players[0]
-                logging.debug(
-                    "no active player playing, selecting the first one: %s",
-                    p)
                 md = self.retrieveMeta(p)
                 md.playerState = self.state_table[p].state
                 if md != self.metadata:
