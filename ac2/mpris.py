@@ -27,6 +27,7 @@ import datetime
 import copy
 from random import randint
 import threading
+import traceback
 
 from ac2.metadata import Metadata, enrich_metadata_bg
 # from ac2.controller import PlayerController
@@ -92,6 +93,10 @@ class MPRISController():
         self.metadata_displays.append(mddisplay)
 
     def metadata_notify(self, metadata):
+        if metadata.is_unknown() and metadata.playerState == "playing":
+            logging.error("Got empty metadata - what's wrong here? %s",
+                          metadata)
+
         for md in self.metadata_displays:
             try:
                 logging.debug("metadata_notify: %s %s", md, metadata)
@@ -304,11 +309,18 @@ class MPRISController():
                 # Check if playback started on a player that wasn't
                 # playing before
                 if state == PLAYING:
+                    md = self.retrieveMeta(p)
+                    if md.is_unknown():
+                        logging.error("oooops, player %s is playing, but did "
+                                      "not receive metadata, "
+                                      "will reuse old metadata",
+                                      p)
+                        md = self.metadata
+
                     if (p not in active_players):
                         new_player_started = p
                         active_players.insert(0, p)
 
-                    md = self.retrieveMeta(p)
                     md.playerState = state
 
                     # MPRIS delivers only very few metadata, these will be
@@ -319,12 +331,15 @@ class MPRISController():
                         new_song = True
 
                     self.state_table[p].metadata = md
-                    if md != self.metadata:
-                        self.metadata_notify(md)
+                    if not(md.sameSong(self.metadata)):
+                        logging.debug("updated metadata: \nold %s\nnew %s",
+                                      self.metadata,
+                                      md)
+                        # Store this as "current"
+                        with self.metadata_lock:
+                            self.metadata = md
 
-                    # Store this as "current"
-                    with self.metadata_lock:
-                        self.metadata = md
+                        self.metadata_notify(md)
 
                     # Add metadata if this is a new song
                     if new_song:
@@ -356,7 +371,7 @@ class MPRISController():
                 p = active_players[0]
                 md = self.retrieveMeta(p)
                 md.playerState = self.state_table[p].state
-                if md != self.metadata:
+                if not(md.sameSong(self.metadata)):
                     self.metadata_notify(md)
 
                 self.metadata = md
