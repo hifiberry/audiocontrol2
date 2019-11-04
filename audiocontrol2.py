@@ -273,7 +273,6 @@ def parse_config(debugmode=False):
             logging.error("can't activate volume_post: %s", e)
 
     # Postgresql scrobbler
-    logging.error("postgres start")
     if "postgres" in config.sections():
         try:
             from ac2.plugins.metadata.postgresql import MetadataPostgres
@@ -291,8 +290,6 @@ def parse_config(debugmode=False):
 
         except Exception as e:
             logging.error("can't activate postgres: %s", e)
-
-    logging.error("postgres ready")
 
     # Plugins
     if "plugins" in config.sections():
