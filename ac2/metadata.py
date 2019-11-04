@@ -24,9 +24,11 @@ import copy
 import threading
 import logging
 
+import ac2.data.musicbrainz as musicbrainz
 import ac2.data.lastfm as lastfmdata
 import ac2.data.coverartarchive as coverart
 from ac2.data.coverarthandler import best_picture_url
+from ac2.data.identities import host_uuid
 
 
 class Metadata:
@@ -57,6 +59,7 @@ class Metadata:
         self.loveSupported = False
         self.tags = []
         self.skipped = False
+        self.host_uuid = None
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
@@ -120,6 +123,9 @@ class Metadata:
     def copy(self):
         return copy.copy(self)
 
+    def is_unknown(self):
+        return self.artist is None and self.title is None
+
     def __str__(self):
         return "{}: {} ({}) {}".format(self.artist, self.title,
                                        self.albumTitle, self.artUrl)
@@ -134,34 +140,46 @@ class MetadataDisplay:
         raise RuntimeError("notify not implemented")
 
 
-def enrich_metadata(metadata, callback=None):
+def enrich_metadata(metadata, improve_artwork=False, callback=None):
     """
     Add more metadata to a song based on the information that are already
     given. These will be retrieved from external sources.
     """
 
-    lastfmdata.enrich_metadata_from_lastfm(metadata)
+    metadata.host_uuid = host_uuid()
+
+    # Try musicbrainzs first
+    try:
+        musicbrainz.enrich_metadata(metadata)
+    except Exception as e:
+        logging.warn("error when retrieving data from musicbrainz: %s", e)
+
+    # Then Last.FM
+    try:
+        lastfmdata.enrich_metadata(metadata)
+    except Exception as e:
+        logging.warn("error when retrieving data from last.fm: %s", e)
 
     if metadata.albummbid is not None:
         mbid = metadata.albummbid
-        # Parse existing image
-        if metadata.artUrl is not None:
-            best_picture_url(mbid, metadata.artUrl)
 
-        # Try to get cover from coverartarchive
-        artUrl = coverart.coverartarchive_cover(metadata.albummbid)
-        if artUrl is not None:
-            metadata.artUrl = best_picture_url(mbid, artUrl)
+        # Improve image
+        if improve_artwork:
+
+            # Parse existing image
+            if metadata.artUrl is not None:
+                best_picture_url(mbid, metadata.artUrl)
+
+            # Try to get cover from coverartarchive
+            artUrl = coverart.coverartarchive_cover(metadata.albummbid)
+            if artUrl is not None:
+                metadata.artUrl = best_picture_url(mbid, artUrl)
 
     if callback is not None:
         callback.update_metadata_attributes(metadata.__dict__)
 
 
 def enrich_metadata_bg(metadata, callback):
-
-    logging.debug("metadata updater thread 1")
-
     md = metadata.copy()
     threading.Thread(target=enrich_metadata, args=(md, callback)).start()
-    logging.debug("metadata updater thread 2")
 
