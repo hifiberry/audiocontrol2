@@ -42,6 +42,10 @@ class MetadataPostgres(MetadataDisplay):
 
     def notify(self, metadata):
 
+        # Ignore empty notifies
+        if (metadata.artist is None and metadata.title is None):
+            return
+
         if metadata.sameSong(self.currentmetadata):
             # This is still the same song, but some information might have
             # been updated
