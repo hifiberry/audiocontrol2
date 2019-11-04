@@ -26,6 +26,8 @@ import json
 from urllib.parse import quote
 from urllib.request import urlopen
 
+from ac2.data.coverarthandler import best_picture_url
+
 lastfmuser = None
 
 cache = ExpiringDict(max_len=100,
@@ -37,11 +39,19 @@ track_template = "http://ws.audioscrobbler.com/2.0/?" \
     "method=track.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
     "&artist={}&track={}&format=json{}"
 
+track_mbid_template = "http://ws.audioscrobbler.com/2.0/?" \
+    "method=track.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
+    "&mbid={}&format=json{}"
+
 artist_template = "http://ws.audioscrobbler.com/2.0/?" \
     "method=artist.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
     "&artist={}&format=json"
 
 album_template = "http://ws.audioscrobbler.com/2.0/?" \
+    "method=album.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
+    "&artist={}&album={}&format=json"
+
+album_mbid_template = "http://ws.audioscrobbler.com/2.0/?" \
     "method=album.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
     "&artist={}&album={}&format=json"
 
@@ -51,8 +61,11 @@ def set_lastfmuser(username):
     lastfmuser = username
 
 
-def enrich_metadata_from_lastfm(metadata):
+def enrich_metadata(metadata, improve_artwork=False):
     logging.debug("enriching metadata")
+
+    if metadata.artist is None or metadata.title is None:
+        logging.debug("artist and/or title undefined, can't enrich metadata")
 
     userparam = ""
     if lastfmuser is not None:
@@ -65,10 +78,10 @@ def enrich_metadata_from_lastfm(metadata):
     trackdata = None
     albumdata = None
 
-    # Get track data
-    if metadata.artist is not None and \
-            metadata.title is not None:
-        trackdata = trackInfo(metadata.artist, metadata.title, userparam)
+    key = "{}/{}/{}".format(metadata.artist, metadata.title, metadata.albumTitle)
+
+    if improve_artwork and metadata.artUrl is not None:
+        best_picture_url(key, metadata.artUrl)
 
     # Get album data if album is set
     if metadata.artist is not None and \
@@ -76,8 +89,9 @@ def enrich_metadata_from_lastfm(metadata):
         albumdata = albumInfo(metadata.artist, metadata.albumTitle)
 
     if albumdata is not None:
-        if metadata.artUrl is None:
-            metadata.artUrl = bestImage(albumdata)
+        if metadata.artUrl is None or improve_artwork:
+            url = bestImage(albumdata, metadata)
+            metadata.artUrl = best_picture_url(key, url)
             logging.info("Got album cover for %s/%s from Last.FM: %s",
                          metadata.artist, metadata.albumTitle,
                          metadata.artUrl)
@@ -100,6 +114,13 @@ def enrich_metadata_from_lastfm(metadata):
                 # mbid might not be available
                 pass
 
+    # get track data
+    if (metadata.artist is not None and metadata.title is not None) or \
+        metadata.mbid is not None:
+
+        trackdata = trackInfo(metadata.artist, metadata.albumTitle,
+                              metadata.mbid, userparam)
+
     # Update track with more information
     if trackdata is not None and "track" in trackdata:
 
@@ -115,19 +136,9 @@ def enrich_metadata_from_lastfm(metadata):
                     metadata.albummbid = trackdata["album"]["mbid"]
                     logging.debug("albummbid=%s", metadata.albummbid)
 
-        if metadata.artUrl is None:
-
-            if metadata.artUrl is None:
-                metadata.artUrl = bestImage(trackdata)
-
-            if metadata.artUrl is not None:
-                logging.info("got cover for %s/%s from Last.FM",
-                             metadata.artist,
-                             metadata.title)
-            else:
-                logging.info("no cover for %s/%s on Last.FM",
-                             metadata.artist,
-                             metadata.title)
+        if metadata.artUrl is None or improve_artwork:
+            url = bestImage(albumdata, metadata)
+            metadata.artUrl = best_picture_url(key, url)
         else:
             logging.debug("not updating artUrl as it exists for %s/%s",
                           metadata.artist, metadata.title)
@@ -167,9 +178,19 @@ def enrich_metadata_from_lastfm(metadata):
                 pass
 
 
-def trackInfo(artist, title, userparam):
+def trackInfo(artist, title, mbid, userparam):
 
-        key = "track/{}/{}".format(artist, title)
+        if mbid is not None:
+            key = mbid
+            url = track_mbid_template.format(mbid, userparam)
+            logging.warning(url)
+
+        else:
+            key = "track/{}/{}".format(artist, title)
+            url = track_template.format(quote(artist),
+                                        quote(title),
+                                        userparam)
+
         trackdata = cache.get(key)
 
         if trackdata is not None:
@@ -177,9 +198,6 @@ def trackInfo(artist, title, userparam):
         else:
             try:
                 if negativeCache.get(key) is None:
-                    url = track_template.format(quote(artist),
-                                                quote(title),
-                                                userparam)
                     with urlopen(url) as connection:
                         trackdata = json.loads(connection.read().decode())
                     cache[key] = trackdata
@@ -211,9 +229,18 @@ def artistInfo(artist_name):
     return artist_data
 
 
-def albumInfo(artist_name, album_name):
+def albumInfo(artist_name, album_name, albummbid=None):
 
-    key = "album/{}/{}".format(artist_name, album_name)
+    if albummbid is not None:
+        key = albummbid
+        url = album_mbid_template.format(quote(albummbid))
+        logging.warning(url)
+
+    else:
+        key = "album/{}/{}".format(artist_name, album_name)
+        url = album_template.format(quote(artist_name),
+                                            quote(album_name))
+
     album_data = cache.get(key)
 
     if album_data is not None:
@@ -221,8 +248,7 @@ def albumInfo(artist_name, album_name):
     else:
         try:
             if negativeCache.get(key) is None:
-                url = album_template.format(quote(artist_name),
-                                            quote(album_name))
+
                 with urlopen(url) as connection:
                     album_data = json.loads(connection.read().decode())
                 cache[key] = album_data
