@@ -41,6 +41,7 @@ import ac2.data.lastfm as lastfmdata
 from ac2.plugins.metadata.lastfm import LastFMScrobbler
 from ac2.webserver import AudioControlWebserver
 from ac2.alsavolume import ALSAVolume
+from ac2.metadata import Metadata
 
 from ac2 import watchdog
 
@@ -166,6 +167,7 @@ def parse_config(debugmode=False):
 
                     if server is not None:
                         server.add_lover(lastfmscrobbler)
+                        Metadata.loveSupportedDefault = True
 
                 except Exception as e:
                     logging.error("error setting up lastfm module: %s", e)
@@ -354,7 +356,10 @@ def main():
         os.system(startup_command)
 
     # mpris.print_players()
-    mpris.main_loop()
+    try:
+        mpris.main_loop()
+    except Exception as e:
+        logging.error("main loop crashed with exception %s", e)
 
     logging.info("Main thread stopped")
 
