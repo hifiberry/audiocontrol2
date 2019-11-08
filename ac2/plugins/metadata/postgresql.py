@@ -72,8 +72,11 @@ class MetadataPostgres(MetadataDisplay):
             if (datetime.now() - self.starttimestamp) < timedelta(seconds=10):
                 songdict["skipped"] = True
 
-            logging.debug("saving metadata to postgresql")
-            self.write_metadata(songdict)
+            if self.currentmetadata.is_unknown():
+                logging.debug("title unknown, not saving to postgresql")
+            else:
+                logging.debug("saving metadata to postgresql")
+                self.write_metadata(songdict)
 
         logging.debug("started listening to a new song")
         self.currentmetadata = metadata
@@ -81,7 +84,6 @@ class MetadataPostgres(MetadataDisplay):
 
     def write_metadata(self, songdict):
         try:
-
             if songdict is None:
                 return
 
@@ -95,8 +97,12 @@ class MetadataPostgres(MetadataDisplay):
 
             cur = conn.cursor()
             logging.debug("inserting %s", songdict)
-            cur.execute("INSERT INTO scrobbles (songdata) VALUES (%s)",
+            cur.execute("INSERT INTO scrobbles (songdata) VALUES (%s) returning id",
                         [Json(songdict)])
+            record_id = cur.fetchone()[0]
+            # # TODO: Check if the song was only paused for a few minutes
+            # # in this case, adapt the data previously inserted into the database
+
             conn.commit()
             cur.close()
 
