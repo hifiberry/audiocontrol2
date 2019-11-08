@@ -27,7 +27,6 @@ import datetime
 import copy
 from random import randint
 import threading
-import traceback
 
 from ac2.metadata import Metadata, enrich_metadata_bg
 # from ac2.controller import PlayerController
@@ -343,7 +342,7 @@ class MPRISController():
 
                     # Add metadata if this is a new song
                     if new_song:
-                        enrich_metadata_bg(md, self)
+                        enrich_metadata_bg(md, callback=self)
 
                     # Even if we din't send metadata, this is still
                     # flagged
