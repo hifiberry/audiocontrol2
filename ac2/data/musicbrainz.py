@@ -20,6 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
+from datetime import date
 import logging
 
 import musicbrainzngs
@@ -30,6 +31,9 @@ musicbrainzngs.set_useragent(
     host_uuid(),
     "https://github.com/hifiberry/audiocontrol2/",
 )
+
+musicbrainzngs.set_hostname(
+    "musicbrainz.hifiberry.com")
 
 
 def query_musicbrainz(query):
@@ -128,6 +132,28 @@ def enrich_metadata(metadata, improve_artwork=False):
             else:
                 logging.debug("no tags for %s/%s on musicbrainz",
                               metadata.artist, metadata.title)
+
+            if metadata.releaseDate is None:
+                # Find data when this was first released
+                rdate = "9999-99-99"
+                for release in data.get("release-list", []):
+                    if release.get("status", "").lower() == "official":
+                        d = release.get("date", "9999-99-99")
+
+                        # Sometimes only a year is listed
+                        if len(d) == 4:
+                            d = d + "-12-31"
+
+                        if d < rdate:
+                            rdate = d
+                try:
+                    date.fromisoformat(rdate)
+                    logging.debug("setting release date: %s", rdate)
+                    metadata.releaseDate = rdate
+                except:
+                    # ignore invalid dates
+                    pass
+
         else:
             logging.info("did not find recording %s/%s on musicbrainz",
                          metadata.artist, metadata.title)
