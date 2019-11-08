@@ -20,37 +20,31 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-import json
 import logging
+from urllib.request import urlopen
+from expiringdict import ExpiringDict
 
-from ac2.http import retrieve_url
-
-
-def coverartarchive_cover(mbid):
-    logging.debug("trying to find coverart for %s on coverartarchive", mbid)
-    try:
-        url = None
-        covers = coverdata(mbid)
-        if covers is not None:
-            for img in covers["images"]:
-                if img["front"]:
-                    url = img["image"]
-                    logging.debug("found cover from coverartarchive: %s", url)
-
-        return url
-
-    except Exception as e:
-        logging.warn("can't load cover for %s: %s", mbid, e)
+cache = ExpiringDict(max_len=100,
+                     max_age_seconds=600)
+negativeCache = ExpiringDict(max_len=100,
+                             max_age_seconds=600)
 
 
-def coverdata(mbid):
-    url = "http://coverartarchive.org/release/{}/".format(mbid)
-    data = retrieve_url(url)
-    trackdata = json.loads(data)
+def retrieve_url(url):
 
-    return trackdata
+    if url in cache:
+        logging.debug("retrieved from cache: %s", url)
+        return cache[url]
+    else:
+        try:
+            if negativeCache.get(url) is None:
+                with urlopen(url) as connection:
+                    res = connection.read()
+                    logging.debug("retrieved live version: %s", url)
+                cache[url] = res
+            else:
+                logging.debug("negative cache hit: %s", url)
+        except Exception as e:
+            logging.warning("HTTP exception while retrieving %s: %s", url, e)
+            negativeCache[url] = True
 
-"""
-print(coverdata("219b202d-290e-3960-b626-bf852a63bc50"))
-print(coverartarchive_cover("219b202d-290e-3960-b626-bf852a63bc50"))
-"""

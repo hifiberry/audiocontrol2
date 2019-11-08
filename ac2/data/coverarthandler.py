@@ -102,17 +102,19 @@ class Coverart():
         self.height = height
         self.imagedata = None
 
-        if self.size() == 0:
-            self.width, self.height = self.guess_size_from_url(url)
+        if self.url is not None:
+            if self.size() == 0:
+                self.width, self.height = self.guess_size_from_url(url)
 
-        if self.size() == 0:
-            try:
-                req = urllib2.Request(url, headers={"Range": "5000"})
-                r = urllib2.urlopen(req)
+            if self.size() == 0:
+                try:
+                    req = urllib2.Request(url, headers={"Range": "5000"})
+                    r = urllib2.urlopen(req)
 
-                _type, self.width, self.height = getImageInfo(r.read())
-            except Exception as e:
-                logging.warning("error while parsing image from %s: %s", url, e)
+                    _type, self.width, self.height = getImageInfo(r.read())
+                except Exception as e:
+                    logging.warning("error while parsing image from %s: %s",
+                                    url, e)
 
         logging.debug("initialized coverart %s: %sx%s",
                       url, self.width, self.height)

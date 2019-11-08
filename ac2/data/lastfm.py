@@ -21,19 +21,13 @@ SOFTWARE.
 '''
 
 import logging
-from expiringdict import ExpiringDict
 import json
 from urllib.parse import quote
-from urllib.request import urlopen
 
 from ac2.data.coverarthandler import best_picture_url
+from ac2.http import retrieve_url
 
 lastfmuser = None
-
-cache = ExpiringDict(max_len=100,
-                     max_age_seconds=600)
-negativeCache = ExpiringDict(max_len=100,
-                             max_age_seconds=600)
 
 track_template = "http://ws.audioscrobbler.com/2.0/?" \
     "method=track.getInfo&api_key=7d2431d8bb5608574b59ea9c7cfe5cbd" \
@@ -118,7 +112,7 @@ def enrich_metadata(metadata, improve_artwork=False):
     if (metadata.artist is not None and metadata.title is not None) or \
         metadata.mbid is not None:
 
-        trackdata = trackInfo(metadata.artist, metadata.albumTitle,
+        trackdata = trackInfo(metadata.artist, metadata.title,
                               metadata.mbid, userparam)
 
     # Update track with more information
@@ -137,7 +131,7 @@ def enrich_metadata(metadata, improve_artwork=False):
                     logging.debug("albummbid=%s", metadata.albummbid)
 
         if metadata.artUrl is None or improve_artwork:
-            url = bestImage(albumdata, metadata)
+            url = bestImage(trackdata)
             metadata.artUrl = best_picture_url(key, url)
         else:
             logging.debug("not updating artUrl as it exists for %s/%s",
@@ -157,7 +151,7 @@ def enrich_metadata(metadata, improve_artwork=False):
             metadata.wiki = trackdata["wiki"]
             logging.debug("found Wiki entry")
 
-        if "toptags" in trackdata:
+        if "toptags" in trackdata and "tag" in trackdata["toptags"]:
             for tag in trackdata["toptags"]["tag"]:
                 metadata.add_tag(tag["name"])
                 logging.debug("adding tag from Last.FM: %s", tag["name"])
@@ -181,80 +175,48 @@ def enrich_metadata(metadata, improve_artwork=False):
 def trackInfo(artist, title, mbid, userparam):
 
         if mbid is not None:
-            key = mbid
             url = track_mbid_template.format(mbid, userparam)
-            logging.warning(url)
-
         else:
-            key = "track/{}/{}".format(artist, title)
             url = track_template.format(quote(artist),
                                         quote(title),
                                         userparam)
 
-        trackdata = cache.get(key)
+        trackdata = None
+        data = retrieve_url(url)
+        if data is not None:
+            trackdata = json.loads(data.decode())
 
-        if trackdata is not None:
-            logging.debug("Found cached entry for %s", key)
-        else:
-            try:
-                if negativeCache.get(key) is None:
-                    with urlopen(url) as connection:
-                        trackdata = json.loads(connection.read().decode())
-                    cache[key] = trackdata
-            except Exception as e:
-                logging.warning("Last.FM exception %s", e)
-                negativeCache[key] = True
+        if mbid is not None and (trackdata is None or "error" in trackdata):
+            logging.debug("track not found via mbid, retrying with name/title")
+            trackdata = trackInfo(artist, title, None, userparam)
 
         return trackdata
 
 
 def artistInfo(artist_name):
 
-    key = "artist/{}".format(artist_name)
-    artist_data = cache.get(key)
-
-    if artist_data is not None:
-        logging.debug("Found cached entry for %s", key)
-    else:
-        try:
-            if negativeCache.get(key) is None:
-                url = artist_template.format(quote(artist_name))
-                with urlopen(url) as connection:
-                    artist_data = json.loads(connection.read().decode())
-                cache[key] = artist_data
-        except Exception as e:
-            logging.warning("Last.FM exception %s", e)
-            negativeCache[key] = True
-
-    return artist_data
+    url = artist_template.format(quote(artist_name))
+    data = retrieve_url(url)
+    if data is not None:
+        return json.loads(data.decode())
 
 
 def albumInfo(artist_name, album_name, albummbid=None):
 
     if albummbid is not None:
-        key = albummbid
         url = album_mbid_template.format(quote(albummbid))
-        logging.warning(url)
-
     else:
-        key = "album/{}/{}".format(artist_name, album_name)
         url = album_template.format(quote(artist_name),
-                                            quote(album_name))
+                                    quote(album_name))
 
-    album_data = cache.get(key)
+    albumdata = None
+    data = retrieve_url(url)
+    if data is not None:
+        albumdata = json.loads(data.decode())
 
-    if album_data is not None:
-        logging.debug("Found cached entry for %s", key)
-    else:
-        try:
-            if negativeCache.get(key) is None:
-
-                with urlopen(url) as connection:
-                    album_data = json.loads(connection.read().decode())
-                cache[key] = album_data
-        except Exception as e:
-            logging.warning("Last.FM exception %s", e)
-            negativeCache[key] = True
+    if albummbid is not None and (albumdata is None or "error" in albumdata):
+        logging.debug("album not found via mbid, retrying with name/title")
+        album_data = albumInfo(artist_name, album_name, None)
 
     return album_data
 
@@ -275,8 +237,8 @@ def bestImage(lastfmdata):
             res[u["size"]] = u["#text"]
 
         for size in ["extralarge", "large", "medium", "small"]:
-            if size in res:
-                logging.debug("found image size %s", size)
+            if size in res and len(res[size]) > 10:
+                logging.debug("found image size %s: %s", size, res[size])
                 return res[size]
 
         return None
