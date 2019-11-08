@@ -36,6 +36,8 @@ class Metadata:
     Class to start metadata of a song
     """
 
+    loveSupportedDefault = False
+
     def __init__(self, artist=None, title=None,
                  albumArtist=None, albumTitle=None,
                  artUrl=None,
@@ -56,10 +58,11 @@ class Metadata:
         self.albummbid = None
         self.loved = None
         self.wiki = None
-        self.loveSupported = False
+        self.loveSupported = Metadata.loveSupportedDefault
         self.tags = []
         self.skipped = False
         self.host_uuid = None
+        self.releaseDate = None
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
@@ -124,7 +127,13 @@ class Metadata:
         return copy.copy(self)
 
     def is_unknown(self):
-        return self.artist is None and self.title is None
+        if self.artist is None and self.title is None:
+            return True
+
+        if self.artist == "unknown artist" and self.title == "unknown title":
+            return True
+
+        return False
 
     def __str__(self):
         return "{}: {} ({}) {}".format(self.artist, self.title,
@@ -140,11 +149,17 @@ class MetadataDisplay:
         raise RuntimeError("notify not implemented")
 
 
-def enrich_metadata(metadata, improve_artwork=False, callback=None):
+def enrich_metadata(metadata, callback=None, improve_artwork=False):
     """
     Add more metadata to a song based on the information that are already
     given. These will be retrieved from external sources.
     """
+
+    if callback is not None:
+        logging.debug("calling callback")
+        callback.update_metadata_attributes({})
+    else:
+        logging.info("callback is none")
 
     metadata.host_uuid = host_uuid()
 
@@ -152,13 +167,15 @@ def enrich_metadata(metadata, improve_artwork=False, callback=None):
     try:
         musicbrainz.enrich_metadata(metadata)
     except Exception as e:
-        logging.warn("error when retrieving data from musicbrainz: %s", e)
+        logging.warn("error when retrieving data from musicbrainz")
+        logging.exception(e)
 
     # Then Last.FM
     try:
         lastfmdata.enrich_metadata(metadata)
     except Exception as e:
-        logging.warn("error when retrieving data from last.fm: %s", e)
+        logging.warn("error when retrieving data from last.fm")
+        logging.exception(e)
 
     if metadata.albummbid is not None:
         mbid = metadata.albummbid
@@ -181,5 +198,5 @@ def enrich_metadata(metadata, improve_artwork=False, callback=None):
 
 def enrich_metadata_bg(metadata, callback):
     md = metadata.copy()
-    threading.Thread(target=enrich_metadata, args=(md, callback)).start()
+    threading.Thread(target=enrich_metadata, args=(md, callback, True)).start()
 
