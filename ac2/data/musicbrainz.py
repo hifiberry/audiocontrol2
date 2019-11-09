@@ -32,8 +32,7 @@ musicbrainzngs.set_useragent(
     "https://github.com/hifiberry/audiocontrol2/",
 )
 
-musicbrainzngs.set_hostname(
-    "musicbrainz.hifiberry.com")
+musicbrainzngs.set_hostname("musicbrainz.hifiberry.com")
 
 
 def query_musicbrainz(query):

@@ -42,6 +42,7 @@ def retrieve_url(url):
                     res = connection.read()
                     logging.debug("retrieved live version: %s", url)
                 cache[url] = res
+                return res
             else:
                 logging.debug("negative cache hit: %s", url)
         except Exception as e:

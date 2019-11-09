@@ -84,7 +84,7 @@ def enrich_metadata(metadata, improve_artwork=False):
 
     if albumdata is not None:
         if metadata.artUrl is None or improve_artwork:
-            url = bestImage(albumdata, metadata)
+            url = bestImage(albumdata)
             metadata.artUrl = best_picture_url(key, url)
             logging.info("Got album cover for %s/%s from Last.FM: %s",
                          metadata.artist, metadata.albumTitle,
@@ -216,9 +216,9 @@ def albumInfo(artist_name, album_name, albummbid=None):
 
     if albummbid is not None and (albumdata is None or "error" in albumdata):
         logging.debug("album not found via mbid, retrying with name/title")
-        album_data = albumInfo(artist_name, album_name, None)
+        albumdata = albumInfo(artist_name, album_name, None)
 
-    return album_data
+    return albumdata
 
 
 def bestImage(lastfmdata):

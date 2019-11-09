@@ -92,37 +92,43 @@ class LastFMScrobbler(MetadataDisplay):
         Scrobble metadata of last song, store meta data of the current song
         """
 
+        if metadata is not None and metadata.sameSong(self.current_metadata):
+            self.current_metadata = metadata
+            logging.debug("updated metadata for current song, not scrobbling now")
+            return
+
         # Check if the last song was played at least 30 seconds, otherwise
         # don't scrobble it'
         now = time.time()
         listening_time = (now - self.starttime)
+        lastsong_md = None
+
         if listening_time > 30:
-            md = self.current_metadata
+            lastsong_md = self.current_metadata
         else:
             logging.debug("not yet logging %s, not listened for at least 30s",
-                          metadata)
-            md = None
+                          lastsong_md)
 
         self.starttime = now
-        logging.info("new metadata received: %s", metadata)
+        logging.info("new song: %s", metadata)
         self.current_metadata = metadata
 
-        if (md is not None) and \
-                (md.artist is not None) and \
-                (md.title is not None):
+        if (lastsong_md is not None) and not(lastsong_md.is_unknown()):
             try:
-                logging.info("scrobbling " + str(md))
+                logging.info("scrobbling " + str(lastsong_md))
                 unix_timestamp = int(time.mktime(
                     datetime.datetime.now().timetuple()))
-                self.get_network.scrobble(artist=md.artist,
-                                      title=md.title,
+                self.get_network.scrobble(artist=lastsong_md.artist,
+                                      title=lastsong_md.title,
                                       timestamp=unix_timestamp)
             except Exception as e:
                 logging.error("Could not scrobble %s/%s: %s",
-                              md.artist,
-                              md.title,
+                              lastsong_md.artist,
+                              lastsong_md.title,
                               e)
                 self.network = None
+        else:
+            logging.info("no track data, not scrobbling %s", lastsong_md)
 
     def __str__(self):
-        return "scrobbler@{}".format(self.networkname)
+        return "lastfmscrobbler@{}".format(self.networkname)

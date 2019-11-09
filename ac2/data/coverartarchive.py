@@ -46,9 +46,8 @@ def coverartarchive_cover(mbid):
 def coverdata(mbid):
     url = "http://coverartarchive.org/release/{}/".format(mbid)
     data = retrieve_url(url)
-    trackdata = json.loads(data)
-
-    return trackdata
+    if data is not None:
+        return json.loads(data)
 
 """
 print(coverdata("219b202d-290e-3960-b626-bf852a63bc50"))
