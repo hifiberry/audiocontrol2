@@ -48,6 +48,7 @@ class Metadata:
         self.albumArtist = albumArtist
         self.albumTitle = albumTitle
         self.artUrl = artUrl
+        self.externalArtUrl = None
         self.discNumber = discNumber
         self.tracknumber = trackNumber
         self.playerName = playerName
@@ -149,7 +150,7 @@ class MetadataDisplay:
         raise RuntimeError("notify not implemented")
 
 
-def enrich_metadata(metadata, callback=None, improve_artwork=False):
+def enrich_metadata(metadata, callback=None):
     """
     Add more metadata to a song based on the information that are already
     given. These will be retrieved from external sources.
@@ -180,17 +181,18 @@ def enrich_metadata(metadata, callback=None, improve_artwork=False):
     if metadata.albummbid is not None:
         mbid = metadata.albummbid
 
-        # Improve image
-        if improve_artwork:
+        # Parse existing image
+        if metadata.externalArtUrl is not None:
+            best_picture_url(mbid, metadata.externalArtUrl)
 
-            # Parse existing image
-            if metadata.artUrl is not None:
-                best_picture_url(mbid, metadata.artUrl)
+        # Try to get cover from coverartarchive
+        artUrl = coverart.coverartarchive_cover(metadata.albummbid)
+        if artUrl is not None:
+            metadata.externalArtUrl = best_picture_url(mbid, artUrl)
 
-            # Try to get cover from coverartarchive
-            artUrl = coverart.coverartarchive_cover(metadata.albummbid)
-            if artUrl is not None:
-                metadata.artUrl = best_picture_url(mbid, artUrl)
+    # If there is no artURL, use the external one
+    if metadata.artUrl is None:
+        metadata.artUrl = metadata.externalArtUrl
 
     if callback is not None:
         callback.update_metadata_attributes(metadata.__dict__)
@@ -198,5 +200,5 @@ def enrich_metadata(metadata, callback=None, improve_artwork=False):
 
 def enrich_metadata_bg(metadata, callback):
     md = metadata.copy()
-    threading.Thread(target=enrich_metadata, args=(md, callback, True)).start()
+    threading.Thread(target=enrich_metadata, args=(md, callback)).start()
 

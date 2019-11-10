@@ -55,7 +55,7 @@ def set_lastfmuser(username):
     lastfmuser = username
 
 
-def enrich_metadata(metadata, improve_artwork=False):
+def enrich_metadata(metadata):
     logging.debug("enriching metadata")
 
     if metadata.artist is None or metadata.title is None:
@@ -74,23 +74,23 @@ def enrich_metadata(metadata, improve_artwork=False):
 
     key = "{}/{}/{}".format(metadata.artist, metadata.title, metadata.albumTitle)
 
-    if improve_artwork and metadata.artUrl is not None:
-        best_picture_url(key, metadata.artUrl)
+    if metadata.externalArtUrl is not None:
+        best_picture_url(key, metadata.externalArtUrl)
 
     # Get album data if album is set
     if metadata.artist is not None and \
             metadata.albumTitle is not None:
         albumdata = albumInfo(metadata.artist, metadata.albumTitle)
 
+    found_album_cover = False
     if albumdata is not None:
-        if metadata.artUrl is None or improve_artwork:
-            url = bestImage(albumdata)
-            metadata.artUrl = best_picture_url(key, url)
+        url = bestImage(albumdata)
+        if url is not None:
+            metadata.externalArtUrl = best_picture_url(key, url)
             logging.info("Got album cover for %s/%s from Last.FM: %s",
                          metadata.artist, metadata.albumTitle,
-                         metadata.artUrl)
-        else:
-            logging.debug("did not find album on Last.FM")
+                         metadata.externalArtUrl)
+            found_album_cover = True
 
         if metadata.albummbid is None:
             try:
@@ -130,12 +130,13 @@ def enrich_metadata(metadata, improve_artwork=False):
                     metadata.albummbid = trackdata["album"]["mbid"]
                     logging.debug("albummbid=%s", metadata.albummbid)
 
-        if metadata.artUrl is None or improve_artwork:
+        if not(found_album_cover):
             url = bestImage(trackdata)
-            metadata.artUrl = best_picture_url(key, url)
-        else:
-            logging.debug("not updating artUrl as it exists for %s/%s",
-                          metadata.artist, metadata.title)
+            if url is not None:
+                metadata.externalArtUrl = best_picture_url(key, url)
+                logging.info("Got track cover for %s/%s from Last.FM: %s",
+                             metadata.artist, metadata.albumTitle,
+                             metadata.externalArtUrl)
 
         if metadata.playCount is None and "userplaycount" in trackdata:
             metadata.playCount = trackdata["userplaycount"]
