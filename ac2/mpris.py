@@ -277,11 +277,14 @@ class MPRISController():
         # Workaround for spotifyd problems
         spotify_stopped = 0
 
+        previous_state = ""
+
         while not(finished):
             new_player_started = None
             metadata_notified = False
             playing = False
             new_song = False
+            state = "unknown"
 
             for p in self.retrievePlayers():
 
@@ -291,8 +294,9 @@ class MPRISController():
                 if p not in self.state_table:
                     self.state_table[p] = PlayerState()
 
+                thisplayer_state = "unknown"
                 try:
-                    state = self.retrieveState(p).lower()
+                    thisplayer_state = self.retrieveState(p).lower()
                     self.state_table[p].failed = 0
                 except:
                     logging.info("Got no state from " + p)
@@ -306,11 +310,14 @@ class MPRISController():
                         watchdog.restart_service(playername)
                         self.state_table[p].failed = 0
 
-                self.state_table[p].state = state
+                self.state_table[p].state = thisplayer_state
 
                 # Check if playback started on a player that wasn't
                 # playing before
-                if state == PLAYING:
+                if thisplayer_state == PLAYING:
+                    playing = True
+                    state = "playing"
+
                     if self.playername(p) == "spotifyd":
                         spotify_stopped = 10
 
@@ -326,7 +333,7 @@ class MPRISController():
                         new_player_started = p
                         active_players.insert(0, p)
 
-                    md.playerState = state
+                    md.playerState = thisplayer_state
 
                     # MPRIS delivers only very few metadata, these will be
                     # enriched with external sources
@@ -345,6 +352,9 @@ class MPRISController():
                             self.metadata = md
 
                         self.metadata_notify(md)
+                    elif state != previous_state:
+                        logging.debug("changed state to playing")
+                        self.metadata_notify(md)
 
                     # Add metadata if this is a new song
                     if new_song:
@@ -353,7 +363,6 @@ class MPRISController():
                     # Even if we din't send metadata, this is still
                     # flagged
                     metadata_notified = True
-                    playing = True
                 else:
                     # always keep one player in the active_players
                     # list
@@ -365,26 +374,26 @@ class MPRISController():
                     i = randint(0, 600)
                     if (i == 0):
                         md = self.retrieveMeta(p)
-                        md.playerState = state
+                        md.playerState = thisplayer_state
                         self.state_table[p].metadata = md
 
             self.playing = playing
 
-            # Spotify workaround
-            if spotify_stopped > 0:
-                spotify_stopped -= 1
-
             # There might be no active player, but one that is paused
             # or stopped
-            if not metadata_notified and len(active_players) > 0:
+            if not(playing) and len(active_players) > 0:
                 p = active_players[0]
                 md = self.retrieveMeta(p)
                 md.playerState = self.state_table[p].state
-                if not(md.sameSong(self.metadata)) or \
-                    (md.playerState != self.metadata.playerState):
+                state = md.playerState
+
+            if state != previous_state:
+                logging.debug("state transition %s -> %s",
+                              previous_state, state)
+                if not metadata_notified:
                     self.metadata_notify(md)
 
-                self.metadata = md
+            previous_state = state
 
             if len(active_players) > 0:
                 self.active_player = active_players[0]
