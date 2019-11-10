@@ -274,6 +274,9 @@ class MPRISController():
 
         MAX_FAIL = 3
 
+        # Workaround for spotifyd problems
+        spotify_stopped = 0
+
         while not(finished):
             new_player_started = None
             metadata_notified = False
@@ -308,6 +311,9 @@ class MPRISController():
                 # Check if playback started on a player that wasn't
                 # playing before
                 if state == PLAYING:
+                    if self.playername(p) == "spotifyd":
+                        spotify_stopped = 10
+
                     md = self.retrieveMeta(p)
                     if md.is_unknown():
                         logging.error("oooops, player %s is playing, but did "
@@ -364,13 +370,18 @@ class MPRISController():
 
             self.playing = playing
 
+            # Spotify workaround
+            if spotify_stopped > 0:
+                spotify_stopped -= 1
+
             # There might be no active player, but one that is paused
             # or stopped
             if not metadata_notified and len(active_players) > 0:
                 p = active_players[0]
                 md = self.retrieveMeta(p)
                 md.playerState = self.state_table[p].state
-                if not(md.sameSong(self.metadata)):
+                if not(md.sameSong(self.metadata)) or \
+                    (md.playerState != self.metadata.playerState):
                     self.metadata_notify(md)
 
                 self.metadata = md
