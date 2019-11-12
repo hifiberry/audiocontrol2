@@ -360,6 +360,7 @@ def main():
         mpris.main_loop()
     except Exception as e:
         logging.error("main loop crashed with exception %s", e)
+        logging.exception(e)
 
     logging.info("Main thread stopped")
 
