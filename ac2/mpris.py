@@ -248,12 +248,19 @@ class MPRISController():
 
         return res
 
-    def update_metadata_attributes(self, updates):
+    def update_metadata_attributes(self, updates, songId):
         logging.debug("received metadata update: %s", updates)
 
         if self.metadata is None:
             logging.warn("ooops, got an update, but don't have metadata")
             return
+
+        if self.metadata.songId() != songId:
+            logging.debug("received update for previous song, ignoring")
+            return
+
+        # TODO: Check if this is the same song!
+        # Otherwise it might be a delayed update
 
         with self.metadata_lock:
             for attribute in updates:
@@ -319,7 +326,7 @@ class MPRISController():
                     state = "playing"
 
                     if self.playername(p) == "spotifyd":
-                        spotify_stopped = 10
+                        spotify_stopped = 0
 
                     md = self.retrieveMeta(p)
                     if md.is_unknown():
@@ -364,6 +371,7 @@ class MPRISController():
                     # flagged
                     metadata_notified = True
                 else:
+
                     # always keep one player in the active_players
                     # list
                     if len(active_players) > 1:
@@ -378,6 +386,22 @@ class MPRISController():
                         self.state_table[p].metadata = md
 
             self.playing = playing
+
+            # Find active (or last paused) player
+            if len(active_players) > 0:
+                self.active_player = active_players[0]
+            else:
+                self.active_player = None
+
+            # Workaround for wrong state messages by Spotify
+            # Assume Spotify is still playing for 10 seconds if it's the
+            # active (or last stopped) player
+            if self.playername(self.active_player) == "spotifyd" and \
+                not(playing):
+                spotify_stopped += 1
+                if spotify_stopped < 10:
+                    logging.debug("spotify workaround %s", spotify_stopped)
+                    playing = True
 
             # There might be no active player, but one that is paused
             # or stopped
@@ -394,11 +418,6 @@ class MPRISController():
                     self.metadata_notify(md)
 
             previous_state = state
-
-            if len(active_players) > 0:
-                self.active_player = active_players[0]
-            else:
-                self.active_player = None
 
             if new_player_started is not None:
                 if self.auto_pause:

@@ -136,6 +136,9 @@ class Metadata:
 
         return False
 
+    def songId(self):
+        return "{}/{}".format(self.artist, self.title)
+
     def __str__(self):
         return "{}: {} ({}) {}".format(self.artist, self.title,
                                        self.albumTitle, self.artUrl)
@@ -156,13 +159,8 @@ def enrich_metadata(metadata, callback=None):
     given. These will be retrieved from external sources.
     """
 
-    if callback is not None:
-        logging.debug("calling callback")
-        callback.update_metadata_attributes({})
-    else:
-        logging.info("callback is none")
-
     metadata.host_uuid = host_uuid()
+    songId = metadata.songId()
 
     # Try musicbrainzs first
     try:
@@ -191,11 +189,11 @@ def enrich_metadata(metadata, callback=None):
             metadata.externalArtUrl = best_picture_url(mbid, artUrl)
 
     # If there is no artURL, use the external one
-    if metadata.artUrl is None:
-        metadata.artUrl = metadata.externalArtUrl
+    # if metadata.artUrl is None:
+    #    metadata.artUrl = metadata.externalArtUrl
 
     if callback is not None:
-        callback.update_metadata_attributes(metadata.__dict__)
+        callback.update_metadata_attributes(metadata.__dict__, songId)
 
 
 def enrich_metadata_bg(metadata, callback):
