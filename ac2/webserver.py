@@ -257,7 +257,6 @@ class AudioControlWebserver(MetadataDisplay):
         self.volume = vol
 
     def send_metadata_update(self, updates):
-        logging.info("hhh")
         for u in self.updaters:
             try:
                 logging.debug("sending update %s to %s", u, updates)
