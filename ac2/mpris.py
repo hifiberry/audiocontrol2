@@ -227,6 +227,8 @@ class MPRISController():
             print(self.playername(p))
 
     def playername(self, mprisname):
+        if mprisname is None:
+            return
         if (mprisname.startswith(MPRIS_PREFIX)):
             return mprisname[len(MPRIS_PREFIX):]
         else:
