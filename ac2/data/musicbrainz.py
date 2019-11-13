@@ -49,14 +49,14 @@ def artist_data(artistname):
                         artistname, e)
 
 
-def album_data(albumname, artistid=None):
+def album_data(albumname, artistname=None):
     try:
-        if artistid is None:
+        if artistname is None:
             data = musicbrainzngs.search_releases(query=albumname,
                                                   limit=1, strict=False)
         else:
             data = musicbrainzngs.search_releases(query=albumname,
-                                                  arid=artistid,
+                                                  artistname=artistname,
                                                   limit=1, strict=False)
         if len(data["release-list"]) >= 1:
             return data["release-list"][0]
@@ -65,7 +65,7 @@ def album_data(albumname, artistid=None):
                         albumname, e)
 
 
-def track_data(trackname, artistid=None, releaseid=None):
+def track_data(trackname, artistname=None, releaseid=None):
     try:
         query = "recording:\"{}\"".format(trackname)
 
@@ -73,9 +73,9 @@ def track_data(trackname, artistid=None, releaseid=None):
             data = musicbrainzngs.search_recordings(query=query,
                                                     reid=releaseid,
                                                     limit=1, strict=False)
-        elif artistid is not None:
+        elif artistname is not None:
             data = musicbrainzngs.search_recordings(query=query,
-                                                    arid=artistid,
+                                                    artistname=artistname,
                                                     limit=1, strict=False)
         else:
             data = musicbrainzngs.search_recordings(query=query,
@@ -94,21 +94,11 @@ def enrich_metadata(metadata, improve_artwork=False):
     if metadata.artist is None or metadata.title is None:
         logging.debug("artist and/or title undefined, can't enrich metadata")
 
-    # Get artist data
-    if metadata.artistmbid is None:
-        data = artist_data(metadata.artist)
-        if data is not None:
-            logging.info("found data for %s on musicbrainz", metadata.artist)
-            metadata.artistmbid = data["id"]
-        else:
-            # Stop here
-            logging.info("did not find artist %s on musicbrainz", metadata.artist)
-            return
-
     # Get album data
     if metadata.albummbid is None:
         if metadata.albumTitle:
-            data = album_data(metadata.albumTitle, artistid=metadata.artistmbid)
+            data = album_data(metadata.albumTitle,
+                              artistname=metadata.artist)
             if data is not None:
                 logging.info("found data for %s on musicbrainz", metadata.artist)
                 metadata.albummbid = data["id"]
@@ -118,7 +108,7 @@ def enrich_metadata(metadata, improve_artwork=False):
     # Get track data
     if metadata.mbid is None:
         data = track_data(metadata.title,
-                          artistid=metadata.artistmbid,
+                          artistname=metadata.artist,
                           releaseid=metadata.albummbid)
         if data is not None:
             logging.info("found data for %s on musicbrainz", metadata.title)
@@ -131,6 +121,14 @@ def enrich_metadata(metadata, improve_artwork=False):
             else:
                 logging.debug("no tags for %s/%s on musicbrainz",
                               metadata.artist, metadata.title)
+
+            if metadata.artistmbid is None:
+                try:
+                    ac = data["artist-credit"][0]
+                    metadata.artistmbid = ac["artist"]["id"]
+                    logging.debug("artist mbid: %s", metadata.artistmbid)
+                except Exception:
+                    logging.debug("did not receive artist mbid data")
 
             if metadata.releaseDate is None:
                 # Find data when this was first released
