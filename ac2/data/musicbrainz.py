@@ -130,26 +130,31 @@ def enrich_metadata(metadata, improve_artwork=False):
                 except Exception:
                     logging.debug("did not receive artist mbid data")
 
-            if metadata.releaseDate is None:
-                # Find data when this was first released
-                rdate = "9999-99-99"
-                for release in data.get("release-list", []):
-                    if release.get("status", "").lower() == "official":
-                        d = release.get("date", "9999-99-99")
+            rdate = "9999-99-99"
+            # Find data when this was first released and get the album mbid
+            for release in data.get("release-list", []):
+                if release.get("status", "").lower() == "official":
 
-                        # Sometimes only a year is listed
-                        if len(d) == 4:
-                            d = d + "-12-31"
+                    if metadata.albummbid is None:
+                        metadata.albummbid = release.get("id")
+                        logging.debug("album mbid: %s", metadata.albummbid)
 
-                        if d < rdate:
-                            rdate = d
-                try:
-                    date.fromisoformat(rdate)
-                    logging.debug("setting release date: %s", rdate)
+                    d = release.get("date", "9999-99-99")
+
+                    # Sometimes only a year is listed
+                    if len(d) == 4:
+                        d = d + "-12-31"
+
+                    if d < rdate:
+                        rdate = d
+            try:
+                date.fromisoformat(rdate)
+                logging.debug("setting release date: %s", rdate)
+                if metadata.releaseDate is None:
                     metadata.releaseDate = rdate
-                except:
-                    # ignore invalid dates
-                    pass
+            except:
+                # ignore invalid dates
+                pass
 
         else:
             logging.info("did not find recording %s/%s on musicbrainz",
