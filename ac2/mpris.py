@@ -87,9 +87,13 @@ class MPRISController():
         self.connect_dbus()
         self.metadata = None
         self.metadata_lock = threading.Lock()
+        self.volume_control = None
 
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
+
+    def set_volume_control(self, volume_control):
+        self.volume_control = volume_control
 
     def metadata_notify(self, metadata):
         if metadata.is_unknown() and metadata.playerState == "playing":
@@ -286,6 +290,9 @@ class MPRISController():
         # Workaround for spotifyd problems
         spotify_stopped = 0
 
+        # Workaround for squeezelite mute
+        squeezelite_active = 0
+
         previous_state = ""
 
         while not(finished):
@@ -329,6 +336,9 @@ class MPRISController():
 
                     if self.playername(p) == "spotifyd":
                         spotify_stopped = 0
+
+                    if self.playername(p) == "squeezelite":
+                        squeezelite_active = 2
 
                     md = self.retrieveMeta(p)
                     if md.is_unknown():
@@ -404,6 +414,14 @@ class MPRISController():
                 if spotify_stopped < 10:
                     logging.debug("spotify workaround %s", spotify_stopped)
                     playing = True
+
+            # Woraround for LMS muting the output after stopping the
+            # player
+
+            if self.playername(self.active_player) != "squeezelite":
+                if squeezelite_active > 0:
+                    squeezelite_active = squeezelite_active - 1
+                    logging.debug("squeezelite was active before, unmuting")
 
             # There might be no active player, but one that is paused
             # or stopped

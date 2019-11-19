@@ -208,6 +208,8 @@ def parse_config(debugmode=False):
             volume_control.start()
             watchdog.add_monitored_thread(volume_control, "volume control")
 
+        mpris.set_volume_control(volume_control)
+
     if volume_control is None:
         logging.info("volume control not configured, "
                      "disabling volume control support")
