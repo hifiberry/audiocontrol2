@@ -51,6 +51,9 @@ mpris_commands = [MPRIS_NEXT, MPRIS_PREV,
                   MPRIS_PAUSE, MPRIS_PLAYPAUSE,
                   MPRIS_STOP, MPRIS_PLAY]
 
+SPOTIFY_NAME = "spotifyd"
+LMS_NAME = "lms"
+
 
 class PlayerState:
     """
@@ -334,10 +337,10 @@ class MPRISController():
                     playing = True
                     state = "playing"
 
-                    if self.playername(p) == "spotifyd":
+                    if self.playername(p) == SPOTIFY_NAME:
                         spotify_stopped = 0
 
-                    if self.playername(p) == "squeezelite":
+                    if self.playername(p) == LMS_NAME:
                         squeezelite_active = 2
 
                     md = self.retrieveMeta(p)
@@ -408,7 +411,7 @@ class MPRISController():
             # Workaround for wrong state messages by Spotify
             # Assume Spotify is still playing for 10 seconds if it's the
             # active (or last stopped) player
-            if self.playername(self.active_player) == "spotifyd" and \
+            if self.playername(self.active_player) == SPOTIFY_NAME and \
                 not(playing):
                 spotify_stopped += 1
                 if spotify_stopped < 10:
@@ -417,11 +420,17 @@ class MPRISController():
 
             # Woraround for LMS muting the output after stopping the
             # player
+            if self.volume_control is not None:
+                if self.playername(self.active_player) != LMS_NAME:
+                    if squeezelite_active > 0:
+                        squeezelite_active = squeezelite_active - 1
+                        logging.debug("squeezelite was active before, unmuting")
+                        self.volume_control.set_mute(False)
 
-            if self.playername(self.active_player) != "squeezelite":
-                if squeezelite_active > 0:
+                if not(playing) and squeezelite_active > 0:
                     squeezelite_active = squeezelite_active - 1
                     logging.debug("squeezelite was active before, unmuting")
+                    self.volume_control.set_mute(False)
 
             # There might be no active player, but one that is paused
             # or stopped
