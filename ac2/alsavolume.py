@@ -34,6 +34,7 @@ class ALSAVolume(threading.Thread):
 
         self.listeners = []
         self.volume = -1
+        self.unmuted_volume = 0
         self.pollinterval = 0.3
         if self.pollinterval < 0.1:
             self.pollinterval = 0.1
@@ -49,6 +50,10 @@ class ALSAVolume(threading.Thread):
     def set_volume(self, vol):
         import alsaaudio
 
+        # Check if this was a "mute" operation and store unmuted volume
+        if vol == 0 and self.volume != 0:
+            self.unmuted_volume = self.volume
+
         if vol != self.volume:
             alsaaudio.Mixer(self.mixer_name).setvolume(int(vol),
                                                        alsaaudio.MIXER_CHANNEL_ALL)
@@ -63,6 +68,17 @@ class ALSAVolume(threading.Thread):
 
         self.set_volume(newvol)
 
+    def set_mute(self, mute):
+        if mute:
+            logging.debug("muting")
+            if self.volume != 0:
+                self.unmuted_volume = self.volume
+                self.set_volume(0)
+        else:
+            logging.debug("unmuting")
+            if self.unmuted_volume > 0:
+                self.set_volume(self.unmuted_volume)
+
     def run(self):
         while True:
             self.update_volume()
@@ -70,6 +86,10 @@ class ALSAVolume(threading.Thread):
 
     def update_volume(self, always_notify=False):
         vol = self.current_volume()
+
+        # Check if this was a "mute" operation and store unmuted volume
+        if vol == 0 and self.volume != 0:
+            self.unmuted_volume = self.volume
 
         if always_notify or (vol != self.volume):
             logging.debug("ALSA volume changed to {}".format(vol))
