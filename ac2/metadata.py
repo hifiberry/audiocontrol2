@@ -161,11 +161,11 @@ def enrich_metadata(metadata, callback=None):
     Add more metadata to a song based on the information that are already
     given. These will be retrieved from external sources.
     """
+    songId = metadata.songId()
 
     if external_metadata:
 
         metadata.host_uuid = host_uuid()
-        songId = metadata.songId()
 
         # Try musicbrainzs first
         try:
