@@ -35,10 +35,6 @@ musicbrainzngs.set_useragent(
 musicbrainzngs.set_hostname("musicbrainz.hifiberry.com")
 
 
-def query_musicbrainz(query):
-    pass
-
-
 def artist_data(artistname):
     try:
         data = musicbrainzngs.search_artists(query=artistname, limit=1, strict=False)
