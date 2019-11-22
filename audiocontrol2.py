@@ -42,6 +42,7 @@ from ac2.plugins.metadata.lastfm import LastFMScrobbler
 from ac2.webserver import AudioControlWebserver
 from ac2.alsavolume import ALSAVolume
 from ac2.metadata import Metadata
+import ac2.metadata
 
 from ac2 import watchdog
 
@@ -315,6 +316,22 @@ def parse_config(debugmode=False):
                 logging.error("can't load metadata plugin %s (%s)",
                               metadata_plugin,
                               e)
+
+    # Other settings
+    if "privacy" in config.sections():
+        extmd = config.getboolean("privacy",
+                                  "external_metadata",
+                                  fallback=True)
+        if extmd:
+            logging.info("external metadata enabled")
+            ac2.metadata.external_metadata = True
+        else:
+            logging.info("external metadata disabled")
+            ac2.metadata.external_metadata = False
+    else:
+        logging.info("no privacy settings found, using defaults")
+
+    logging.debug("ac2.md.extmd %s", ac2.metadata.external_metadata)
 
     # Other system settings
     global startup_command

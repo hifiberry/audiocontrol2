@@ -30,6 +30,9 @@ import ac2.data.coverartarchive as coverart
 from ac2.data.coverarthandler import best_picture_url
 from ac2.data.identities import host_uuid
 
+# Use external metadata?
+external_metadata = True
+
 
 class Metadata:
     """
@@ -159,38 +162,36 @@ def enrich_metadata(metadata, callback=None):
     given. These will be retrieved from external sources.
     """
 
-    metadata.host_uuid = host_uuid()
-    songId = metadata.songId()
+    if external_metadata:
 
-    # Try musicbrainzs first
-    try:
-        musicbrainz.enrich_metadata(metadata)
-    except Exception as e:
-        logging.warn("error when retrieving data from musicbrainz")
-        logging.exception(e)
+        metadata.host_uuid = host_uuid()
+        songId = metadata.songId()
 
-    # Then Last.FM
-    try:
-        lastfmdata.enrich_metadata(metadata)
-    except Exception as e:
-        logging.warn("error when retrieving data from last.fm")
-        logging.exception(e)
+        # Try musicbrainzs first
+        try:
+            musicbrainz.enrich_metadata(metadata)
+        except Exception as e:
+            logging.warn("error when retrieving data from musicbrainz")
+            logging.exception(e)
 
-    if metadata.albummbid is not None:
-        mbid = metadata.albummbid
+        # Then Last.FM
+        try:
+            lastfmdata.enrich_metadata(metadata)
+        except Exception as e:
+            logging.warn("error when retrieving data from last.fm")
+            logging.exception(e)
 
-        # Parse existing image
-        if metadata.externalArtUrl is not None:
-            best_picture_url(mbid, metadata.externalArtUrl)
+        if metadata.albummbid is not None:
+            mbid = metadata.albummbid
 
-        # Try to get cover from coverartarchive
-        artUrl = coverart.coverartarchive_cover(metadata.albummbid)
-        if artUrl is not None:
-            metadata.externalArtUrl = best_picture_url(mbid, artUrl)
+            # Parse existing image
+            if metadata.externalArtUrl is not None:
+                best_picture_url(mbid, metadata.externalArtUrl)
 
-    # If there is no artURL, use the external one
-    # if metadata.artUrl is None:
-    #    metadata.artUrl = metadata.externalArtUrl
+            # Try to get cover from coverartarchive
+            artUrl = coverart.coverartarchive_cover(metadata.albummbid)
+            if artUrl is not None:
+                metadata.externalArtUrl = best_picture_url(mbid, artUrl)
 
     if callback is not None:
         callback.update_metadata_attributes(metadata.__dict__, songId)
