@@ -118,7 +118,7 @@ class LastFMScrobbler(MetadataDisplay):
                 logging.info("scrobbling " + str(lastsong_md))
                 unix_timestamp = int(time.mktime(
                     datetime.datetime.now().timetuple()))
-                self.get_network.scrobble(artist=lastsong_md.artist,
+                self.get_network().scrobble(artist=lastsong_md.artist,
                                       title=lastsong_md.title,
                                       timestamp=unix_timestamp)
             except Exception as e:
