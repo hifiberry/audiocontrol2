@@ -88,7 +88,7 @@ class MPRISController():
         self.metadata = {}
         self.playing = False
         self.connect_dbus()
-        self.metadata = None
+        self.metadata = Metadata()
         self.metadata_lock = threading.Lock()
         self.volume_control = None
 
