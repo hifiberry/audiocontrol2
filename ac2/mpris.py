@@ -344,12 +344,12 @@ class MPRISController():
                         squeezelite_active = 2
 
                     md = self.retrieveMeta(p)
-                    if md.is_unknown():
-                        logging.error("oooops, player %s is playing, but did "
-                                      "not receive metadata, "
-                                      "will reuse old metadata",
-                                      p)
-                        md = self.metadata
+#                    if md.is_unknown():
+#                        logging.error("oooops, player %s is playing, but did "
+#                                      "not receive metadata, "
+#                                      "will reuse old metadata",
+#                                      p)
+#                        md = self.metadata
 
                     if (p not in active_players):
                         new_player_started = p
