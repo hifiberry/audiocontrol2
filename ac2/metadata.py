@@ -112,7 +112,7 @@ class Metadata:
                 [artist, title] = self.title.split(" - ", 1)
                 self.artist = artist
                 self.title = title
-            if (", " in self.title):
+            elif (", " in self.title):
                 [title, artist] = self.title.split(", ", 1)
                 self.artist = artist
                 self.title = title
