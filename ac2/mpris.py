@@ -67,6 +67,7 @@ class PlayerState:
             self.metadata = metadata
         else:
             self.metadata = Metadata()
+        self.supported_commands = []
 
     def __str__(self):
         return self.state + str(self.metadata)
@@ -141,6 +142,27 @@ class MPRISController():
             return state
         except Exception as e:
             logging.warn("got exception %s", e)
+
+    def retrieveCommands(self, name):
+        commands = {
+            "pause": "CanPause",
+            "next": "CanGoNext",
+            "previous": "CanGoPrevious",
+            "play": "CanPlay",
+            "seek": "CanSeek"
+        }
+        try:
+            supported_commands = ["stop"]  # Stop must always be supported
+            device_prop = self.dbus_get_device_prop_interface(name)
+            for command in commands:
+                supported = device_prop.Get("org.mpris.MediaPlayer2.Player",
+                                            commands[command])
+                if supported:
+                    supported_commands.append(command)
+        except Exception as e:
+            logging.warn("got exception %s", e)
+
+        return supported_commands
 
     def retrieveMeta(self, name):
         """
@@ -311,7 +333,12 @@ class MPRISController():
                     continue
 
                 if p not in self.state_table:
-                    self.state_table[p] = PlayerState()
+                    ps = PlayerState()
+                    ps.supported_commands = self.retrieveCommands(p)
+                    logging.debug("Player %s supports %s",
+                                  p,
+                                  ps.supported_commands)
+                    self.state_table[p] = ps
 
                 thisplayer_state = "unknown"
                 try:
@@ -497,6 +524,7 @@ class MPRISController():
             player["state"] = self.state_table[p].state
             player["artist"] = self.state_table[p].metadata.artist
             player["title"] = self.state_table[p].metadata.title
+            player["supported_commands"] = self.state_table[p].supported_commands;
 
             players.append(player)
 
