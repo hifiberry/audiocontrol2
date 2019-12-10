@@ -208,7 +208,12 @@ class MPRISController():
                 trackNumber = None
 
             md = Metadata(artist, title, albumArtist, albumTitle,
-                          artURL, discNumber, trackNumber)
+              artURL, discNumber, trackNumber)
+
+            try:
+                md.streamUrl = prop.get("xesam:url")
+            except:
+                pass
 
             md.playerName = self.playername(name)
 

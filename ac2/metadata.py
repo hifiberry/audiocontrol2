@@ -45,7 +45,8 @@ class Metadata:
                  albumArtist=None, albumTitle=None,
                  artUrl=None,
                  discNumber=None, trackNumber=None,
-                 playerName=None, playerState="unknown"):
+                 playerName=None, playerState="unknown",
+                 streamUrl=None):
         self.artist = artist
         self.title = title
         self.albumArtist = albumArtist
@@ -56,6 +57,7 @@ class Metadata:
         self.tracknumber = trackNumber
         self.playerName = playerName
         self.playerState = playerState
+        self.streamUrl = streamUrl
         self.playCount = None
         self.mbid = None
         self.artistmbid = None
