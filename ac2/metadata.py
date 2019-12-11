@@ -69,6 +69,7 @@ class Metadata:
         self.skipped = False
         self.host_uuid = None
         self.releaseDate = None
+        self.trackid = None
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):

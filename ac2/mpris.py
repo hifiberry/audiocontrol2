@@ -215,6 +215,11 @@ class MPRISController():
             except:
                 pass
 
+            try:
+                md.trackId = prop.get("mpris:trackid")
+            except:
+                pass
+
             md.playerName = self.playername(name)
 
             md.fixProblems()
