@@ -2,7 +2,7 @@
 
 With the REST API you can control players using HTTP requests. At this point, no encryption and authentication are supported.
 
-## Control player
+## Control active player
 
 Player control commands use POST requests
 ```
@@ -21,7 +21,20 @@ List of all players with their current status can be retrieved by a GET to
 /api/player/status
 ```
 
-Note that this is mostly for debugging, the format might change without further notice.
+## Activate another player
+```
+/api/player/active/<playername>
+```
+
+This will start music playback on the given player. Note that this will just send a
+PLAY command to this specific player. Not all players might support this for various reasons:
+- player is not enabled
+- player is not connected to a server
+- player has not active playlist
+- player is already running on another server
+- ...
+
+If this player can't become active for any of these reasons, the current player will stay active.
 
 ## Metadata
 
