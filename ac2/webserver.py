@@ -68,6 +68,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/api/player/playing',
                           method="GET",
                           callback=self.playerplaying_handler)
+        self.bottle.route('/api/player/activate/<player>',
+                          method="POST",
+                          callback=self.playeractivate_handler)
         self.bottle.route('/api/player/<command>',
                           method="POST",
                           callback=self.playercontrol_handler)
@@ -111,6 +114,18 @@ class AudioControlWebserver(MetadataDisplay):
         except Exception as e:
             response.status = 500
             return "{} failed with exception {}".format(command, e)
+
+        return "ok"
+
+    def playeractivate_handler(self, player):
+        try:
+            if not(self.activate_player(player)):
+                response.status = 500
+                return "activation of {} failed".format(player)
+
+        except Exception as e:
+            response.status = 500
+            return "activate/{} failed with exception {}".format(player, e)
 
         return "ok"
 
@@ -279,6 +294,16 @@ class AudioControlWebserver(MetadataDisplay):
     def set_player_control(self, playercontrol):
         self.player_control = playercontrol
 
+    def activate_player(self, playername):
+
+        if self.player_control is None:
+            logging.info(
+                    "no controller connected, can't activate a player")
+            return False
+
+        logging.info("trying to activate %s", playername)
+        return self.player_control.activate_player(playername)
+
     def send_command(self, command, params=None):
         if command == "love":
             return self.love_track(True)
@@ -306,6 +331,7 @@ class AudioControlWebserver(MetadataDisplay):
             if self.player_control is None:
                 logging.info(
                     "no controller connected, ignoring websocket command")
+                return False
 
             try:
                 if command == "next":

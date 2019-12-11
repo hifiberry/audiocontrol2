@@ -284,6 +284,16 @@ class MPRISController():
 
         return res
 
+    def activate_player(self, playername):
+
+        command = MPRIS_PLAY
+        if playername.startswith(MPRIS_PREFIX):
+            res = self.mpris_command(playername, command)
+        else:
+            res = self.mpris_command(MPRIS_PREFIX + playername, command)
+
+        return res
+
     def update_metadata_attributes(self, updates, songId):
         logging.debug("received metadata update: %s", updates)
 
