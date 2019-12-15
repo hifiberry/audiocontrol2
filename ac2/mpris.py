@@ -227,10 +227,16 @@ class MPRISController():
             return md
 
         except dbus.exceptions.DBusException as e:
-            logging.warning("no mpris data received %s", e)
+            if "ServiceUnknown" in e.__class__.__name__:
+                # unfortunately we can't do anything about this and
+                # logging doesn't help, therefore just ignoring this case
+                pass
+                #  logging.warning("service %s disappered, cleaning up", e)
+            else:
+                logging.warning("no mpris data received %s", e)
+
             md = Metadata()
             md.playerName = self.playername(name)
-
             return md
 
     def mpris_command(self, playername, command):
