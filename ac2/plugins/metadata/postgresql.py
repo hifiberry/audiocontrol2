@@ -23,7 +23,7 @@ SOFTWARE.
 from datetime import datetime, timedelta
 import logging
 
-from ac2.metadata import MetadataDisplay
+from ac2.plugins.metadata import MetadataDisplay
 from ac2.metadata import enrich_metadata
 
 
@@ -44,6 +44,7 @@ class MetadataPostgres(MetadataDisplay):
 
         # Ignore empty notifies
         if (metadata.artist is None and metadata.title is None):
+            logging.debug("no artist and/or title, not logging")
             return
 
         if metadata.sameSong(self.currentmetadata):

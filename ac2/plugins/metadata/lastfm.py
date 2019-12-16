@@ -24,7 +24,7 @@ import time
 import logging
 import datetime
 
-from ac2.metadata import MetadataDisplay
+from ac2.plugins.metadata import MetadataDisplay
 import pylast
 
 
@@ -34,6 +34,9 @@ class LastFMScrobbler(MetadataDisplay):
                  username, password,
                  password_hash=None,
                  network="lastfm"):
+
+        super()
+
         if password_hash is None:
             password_hash = pylast.md5(password)
 

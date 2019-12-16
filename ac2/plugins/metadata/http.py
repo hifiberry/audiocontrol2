@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-from ac2.metadata import MetadataDisplay
+from ac2.plugins.metadata import MetadataDisplay
 
 import requests
 import logging
