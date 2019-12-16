@@ -150,15 +150,6 @@ class Metadata:
                                        self.albumTitle, self.artUrl)
 
 
-class MetadataDisplay:
-
-    def __init__(self):
-        pass
-
-    def notify(self, metadata):
-        raise RuntimeError("notify not implemented")
-
-
 def enrich_metadata(metadata, callback=None):
     """
     Add more metadata to a song based on the information that are already
