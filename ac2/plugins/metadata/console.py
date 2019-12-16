@@ -26,7 +26,7 @@ from ac2.plugins.metadata import MetadataDisplay
 class MetadataConsole(MetadataDisplay):
 
     def __init__(self):
-        super()
+        super().__init__(self)
         pass
 
     def notify(self, metadata):

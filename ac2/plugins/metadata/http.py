@@ -35,7 +35,7 @@ class MetadataHTTPRequest(MetadataDisplay):
     '''
 
     def __init__(self, url=None, request_type="json"):
-        super()
+        super().__init__()
         self.request_type = request_type
         self.url = url
         pass

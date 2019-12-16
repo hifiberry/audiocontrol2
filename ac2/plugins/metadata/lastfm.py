@@ -35,7 +35,7 @@ class LastFMScrobbler(MetadataDisplay):
                  password_hash=None,
                  network="lastfm"):
 
-        super()
+        super().__init__()
 
         if password_hash is None:
             password_hash = pylast.md5(password)

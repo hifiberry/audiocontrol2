@@ -30,7 +30,8 @@ from ac2.metadata import enrich_metadata
 class MetadataPostgres(MetadataDisplay):
 
     def __init__(self):
-        super()
+        logging.debug("initializing PostgreSQL scrobbler")
+        super().__init__()
         self.starttimestamp = None
         self.conn = None
         self.user = None
