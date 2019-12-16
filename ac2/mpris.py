@@ -107,7 +107,7 @@ class MPRISController():
         for md in self.metadata_displays:
             try:
                 logging.debug("metadata_notify: %s %s", md, metadata)
-                md.notify(copy.copy(metadata))
+                md.notify_async(copy.copy(metadata))
             except Exception as e:
                 logging.warn("could not notify %s: %s", md, e)
 
@@ -240,17 +240,22 @@ class MPRISController():
             return md
 
     def mpris_command(self, playername, command):
-        if command in mpris_commands:
-            proxy = self.bus.get_object(playername,
-                                        "/org/mpris/MediaPlayer2")
-            player = dbus.Interface(
-                proxy, dbus_interface='org.mpris.MediaPlayer2.Player')
+        try:
+            if command in mpris_commands:
+                proxy = self.bus.get_object(playername,
+                                            "/org/mpris/MediaPlayer2")
+                player = dbus.Interface(
+                    proxy, dbus_interface='org.mpris.MediaPlayer2.Player')
 
-            run_command = getattr(player, command,
-                                  lambda: "Unknown command")
-            return run_command()
-        else:
-            logging.error("MPRIS command %s not supported", command)
+                run_command = getattr(player, command,
+                                      lambda: "Unknown command")
+                return run_command()
+            else:
+                logging.error("MPRIS command %s not supported", command)
+        except Exception as e:
+            logging.error("exception %s while sending MPRIS command %s to %s",
+                          e, command, playername)
+            return False
 
     def pause_inactive(self, active_player):
         """
@@ -353,6 +358,8 @@ class MPRISController():
             new_song = False
             state = "unknown"
 
+            logging.debug("main loop begin")
+
             for p in self.retrievePlayers():
 
                 if self.playername(p) in self.ignore_players:
@@ -427,6 +434,7 @@ class MPRISController():
                             self.metadata = md
 
                         self.metadata_notify(md)
+                        logging.debug("notifications about new metadata sent")
                     elif state != previous_state:
                         logging.debug("changed state to playing")
                         self.metadata_notify(md)
@@ -434,6 +442,7 @@ class MPRISController():
                     # Add metadata if this is a new song
                     if new_song:
                         enrich_metadata_bg(md, callback=self)
+                        logging.debug("metadata updater thread started")
 
                     # Even if we din't send metadata, this is still
                     # flagged
