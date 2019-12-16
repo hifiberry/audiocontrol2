@@ -27,6 +27,7 @@ import logging
 class MetadataDisplay:
 
     def __init__(self):
+        logging.debug("initializing MetadataDisplay instance")
         self.notifierthread = None
         pass
 
