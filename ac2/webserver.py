@@ -28,7 +28,8 @@ import os
 import urllib.parse
 from bottle import Bottle, static_file, request, response
 
-from ac2.metadata import Metadata, MetadataDisplay, enrich_metadata
+from ac2.metadata import Metadata
+from ac2.plugins.metadata import MetadataDisplay
 
 
 class AudioControlWebserver(MetadataDisplay):
@@ -37,6 +38,7 @@ class AudioControlWebserver(MetadataDisplay):
                  port=80,
                  host='0.0.0.0',
                  debug=False):
+        super().__init__()
         self.port = port
         self.host = host
         self.debug = debug
