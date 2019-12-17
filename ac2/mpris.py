@@ -233,7 +233,7 @@ class MPRISController():
                 pass
                 #  logging.warning("service %s disappered, cleaning up", e)
             else:
-                logging.warning("no mpris data received %s", e)
+                logging.warning("no mpris data received %s", e.__class__.__name__)
 
             md = Metadata()
             md.playerName = self.playername(name)
@@ -357,8 +357,6 @@ class MPRISController():
             playing = False
             new_song = False
             state = "unknown"
-
-            logging.debug("main loop begin")
 
             for p in self.retrievePlayers():
 
