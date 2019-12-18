@@ -24,12 +24,12 @@ from datetime import date
 import logging
 
 import musicbrainzngs
-from ac2.data.identities import host_uuid
+from ac2.data.identities import host_uuid, release
 
 musicbrainzngs.set_useragent(
     "audiocontrol2",
     host_uuid(),
-    "https://github.com/hifiberry/audiocontrol2/",
+    "https://github.com/hifiberry/audiocontrol2/" + release,
 )
 
 musicbrainzngs.set_hostname("musicbrainz.hifiberry.com")

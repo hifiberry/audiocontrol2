@@ -23,6 +23,7 @@ SOFTWARE.
 import logging
 
 my_uuid = None
+my_release = None
 
 
 def host_uuid():
@@ -39,3 +40,19 @@ def host_uuid():
         my_uuid = "unknown"
 
     return my_uuid
+
+
+def release():
+    global my_release
+
+    if my_release is not None:
+        return my_release
+
+    try:
+        with open('/etc/hifiberry.version', 'r') as file:
+            my_release = file.readline().strip()
+    except IOError:
+        logging.warning("can't read /etc/hifiberry.version, using empty release id")
+        my_release = "unknown"
+
+    return my_release
