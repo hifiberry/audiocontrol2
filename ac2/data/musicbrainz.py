@@ -29,7 +29,7 @@ from ac2.data.identities import host_uuid, release
 musicbrainzngs.set_useragent(
     "audiocontrol2",
     host_uuid(),
-    "https://github.com/hifiberry/audiocontrol2/" + release,
+    "https://github.com/hifiberry/audiocontrol2/" + release(),
 )
 
 musicbrainzngs.set_hostname("musicbrainz.hifiberry.com")
