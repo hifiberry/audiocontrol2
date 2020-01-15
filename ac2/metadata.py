@@ -26,6 +26,7 @@ import logging
 
 import ac2.data.musicbrainz as musicbrainz
 import ac2.data.lastfm as lastfmdata
+import ac2.data.fanarttv as fanarttv
 import ac2.data.coverartarchive as coverart
 from ac2.data.coverarthandler import best_picture_url
 from ac2.data.identities import host_uuid
@@ -186,6 +187,10 @@ def enrich_metadata(metadata, callback=None):
             artUrl = coverart.coverartarchive_cover(metadata.albummbid)
             if artUrl is not None:
                 metadata.externalArtUrl = best_picture_url(mbid, artUrl)
+                
+        # try Fanart.TV, we might at least find an artist picture
+        fanarttv.enrich_metadata(metadata)
+    
 
     if callback is not None:
         callback.update_metadata_attributes(metadata.__dict__, songId)
