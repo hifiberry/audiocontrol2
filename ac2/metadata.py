@@ -27,10 +27,9 @@ import logging
 import ac2.data.musicbrainz as musicbrainz
 import ac2.data.lastfm as lastfmdata
 import ac2.data.fanarttv as fanarttv
-import ac2.data.coverartarchive as coverart
-from ac2.data.coverarthandler import best_picture_url
+import ac2.data.hifiberry as hifiberrydb
+import ac2.data.coverartarchive as coverartarchive
 from ac2.data.identities import host_uuid
-from ac2.data import coverartarchive
 
 # Use external metadata?
 external_metadata = True
@@ -72,6 +71,7 @@ class Metadata:
         self.host_uuid = None
         self.releaseDate = None
         self.trackid = None
+        self.best_cover_found=False
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
@@ -169,6 +169,13 @@ def enrich_metadata(metadata, callback=None):
         except Exception as e:
             logging.warn("error when retrieving data from musicbrainz")
             logging.exception(e)
+            
+        # Then HiFiBerry MusicDB
+        try:
+            hifiberrydb.enrich_metadata(metadata)
+        except Exception as e:
+            logging.warn("error when retrieving data from hifiberry db")
+            logging.exception(e)
 
         # Then Last.FM
         try:
@@ -176,7 +183,6 @@ def enrich_metadata(metadata, callback=None):
         except Exception as e:
             logging.warn("error when retrieving data from last.fm")
             logging.exception(e)
-            
                 
         # try Fanart.TV, but without artist picture
         try:
@@ -189,6 +195,8 @@ def enrich_metadata(metadata, callback=None):
             coverartarchive.enrich_metadata(metadata)
         except Exception as e:
             logging.exception(e)
+            
+        hifiberrydb.send_update(metadata)
         
         # still no cover? try to get at least an artist picture
         try:

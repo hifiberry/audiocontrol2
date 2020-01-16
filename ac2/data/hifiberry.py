@@ -22,30 +22,71 @@ SOFTWARE.
 
 import logging
 
-from ac2.data.coverarthandler import best_picture_url
-from ac2.http import retrieve_url
+from ac2.data.coverarthandler import best_picture_url, best_picture_size
+from ac2.http import retrieve_url, post_data
 
-def hifiberry_cover(song_mbid, album_mbid):
+BASE_URL="https://musicdb.hifiberry.com"
+
+def hifiberry_cover(song_mbid, album_mbid, artist_mbid):
     logging.debug("trying to find coverart for %s from hifiberry", song_mbid)
 
     try:
-        url = "https://musicdb.hifiberry.com/cover/{}/{}".format(song_mbid, album_mbid)
-        cover_url = retrieve_url(url)
-        if cover_url is None or len(cover_url == 0):
-            return None
-        else:
-            return cover_url
+        url = "{}/cover/{}/{}/{}".format(BASE_URL, song_mbid, album_mbid, artist_mbid)
+        cover_data = retrieve_url(url)
+        if cover_data is not None and len(cover_data)>0:
+            (cover_url, width, height) = cover_data.decode('utf8').split("|")
+            if cover_url=="":
+                cover_url = None
+            return (cover_url, int(width), int(height))
     except Exception as e:
         logging.warn("can't load cover for %s: %s", song_mbid, e)
+        logging.exception(e)
+    
+    return (None, 0, 0)
 
+def send_update(metadata):
+    if metadata.best_cover_found:
+        return 
+    
+    if metadata.mbid is None:
+        return
+    
+    key="update"+metadata.songId()
+    
+    best_picture_url(key, metadata.externalArtUrl)
+    artUrl = best_picture_url(key, metadata.artUrl)
+    
+    if artUrl is not None:
+        (width, height) = best_picture_size(key)
+    
+    data = {
+        "mbid": metadata.mbid,
+        "url": artUrl,
+        "width": width,
+        "height": height
+        }
+    
+    try:
+        url = "{}/cover-update".format(BASE_URL)
+        post_data(url,data)
+    except Exception as e:
+        logging.exception(e)
+    
+    
 
 def enrich_metadata(metadata):
     
     if metadata.mbid is None:
         return
     
-    artUrl = hifiberry_cover(metadata.mbid, metadata.albummbid)
-
+    (artUrl, width, height) = hifiberry_cover(metadata.mbid, metadata.albummbid, metadata.artistmbid)
+    
     # check if the cover is improved
     key=metadata.songId()
-    metadata.externalArtUrl = best_picture_url(key, artUrl)
+    metadata.externalArtUrl = best_picture_url(key, artUrl, width, height)
+    
+    if metadata.externalArtUrl== artUrl:
+        metadata.best_cover_found = True
+    
+    
+    
