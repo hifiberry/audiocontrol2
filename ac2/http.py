@@ -21,8 +21,10 @@ SOFTWARE.
 '''
 
 import logging
-from urllib.request import urlopen
+from urllib.request import Request,urlopen
 from expiringdict import ExpiringDict
+
+from ac2.data.identities import host_uuid, release
 
 cache = ExpiringDict(max_len=100,
                      max_age_seconds=600)
@@ -38,7 +40,9 @@ def retrieve_url(url):
     else:
         try:
             if negativeCache.get(url) is None:
-                with urlopen(url) as connection:
+                req = Request(url)
+                req.add_header('User-agent', 'audiocontrol/{}/{}'.format(release(), host_uuid()))
+                with urlopen(req) as connection:
                     res = connection.read()
                     logging.debug("retrieved live version: %s", url)
                 cache[url] = res
