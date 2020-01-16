@@ -30,6 +30,7 @@ import ac2.data.fanarttv as fanarttv
 import ac2.data.coverartarchive as coverart
 from ac2.data.coverarthandler import best_picture_url
 from ac2.data.identities import host_uuid
+from ac2.data import coverartarchive
 
 # Use external metadata?
 external_metadata = True
@@ -145,7 +146,7 @@ class Metadata:
 
     def songId(self):
         return "{}/{}".format(self.artist, self.title)
-
+    
     def __str__(self):
         return "{}: {} ({}) {}".format(self.artist, self.title,
                                        self.albumTitle, self.artUrl)
@@ -175,21 +176,25 @@ def enrich_metadata(metadata, callback=None):
         except Exception as e:
             logging.warn("error when retrieving data from last.fm")
             logging.exception(e)
-
-        if metadata.albummbid is not None:
-            mbid = metadata.albummbid
-
-            # Parse existing image
-            if metadata.externalArtUrl is not None:
-                best_picture_url(mbid, metadata.externalArtUrl)
-
-            # Try to get cover from coverartarchive
-            artUrl = coverart.coverartarchive_cover(metadata.albummbid)
-            if artUrl is not None:
-                metadata.externalArtUrl = best_picture_url(mbid, artUrl)
+            
                 
-        # try Fanart.TV, we might at least find an artist picture
-        fanarttv.enrich_metadata(metadata)
+        # try Fanart.TV, but without artist picture
+        try:
+            fanarttv.enrich_metadata(metadata, allow_artist_picture=False)
+        except Exception as e:
+            logging.exception(e)
+        
+        # try coverartarchive
+        try:
+            coverartarchive.enrich_metadata(metadata)
+        except Exception as e:
+            logging.exception(e)
+        
+        # still no cover? try to get at least an artist picture
+        try:
+            fanarttv.enrich_metadata(metadata, allow_artist_picture=True)
+        except Exception as e:
+            logging.exception(e)
     
 
     if callback is not None:

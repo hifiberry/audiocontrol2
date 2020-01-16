@@ -72,7 +72,7 @@ def enrich_metadata(metadata):
     trackdata = None
     albumdata = None
 
-    key = "{}/{}/{}".format(metadata.artist, metadata.title, metadata.albumTitle)
+    key = metadata.songId()
 
     if metadata.externalArtUrl is not None:
         best_picture_url(key, metadata.externalArtUrl)

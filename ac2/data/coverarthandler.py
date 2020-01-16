@@ -30,6 +30,9 @@ import io
 import struct
 import urllib.request as urllib2
 
+GOOD_ENOUGH_WIDTH = 1000
+GOOD_ENOUGH_HEIGHT = 1000
+
 
 def getImageInfo(data):
     data = data
@@ -139,6 +142,8 @@ class Coverart():
 
 
 def best_picture_url(key, url, width=0, height=0):
+    
+    logging.debug("looking up existing pictures for %s",key)
     cover = Coverart(url, width, height)
     existing_cover = covers.get(key)
     if existing_cover is not None:
@@ -160,4 +165,22 @@ def best_picture_url(key, url, width=0, height=0):
                       cover.width, cover.height)
         covers[key] = cover
         return cover.url
-
+    
+def best_picture_size(key):
+    
+    if key is None:
+        return(0,0)
+    
+    existing_cover = covers.get(key)
+    if existing_cover is not None:
+        return (existing_cover.width, existing_cover.height)
+    else:
+        return (0,0)
+    
+def good_enough(key):
+    (width, height) = best_picture_size(key)
+    if width >= GOOD_ENOUGH_WIDTH and height >= GOOD_ENOUGH_HEIGHT:
+        return True
+    else:
+        return False
+    

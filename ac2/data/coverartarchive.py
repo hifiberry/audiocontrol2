@@ -24,6 +24,7 @@ import json
 import logging
 
 from ac2.http import retrieve_url
+from ac2.data.coverarthandler import good_enough, best_picture_url
 
 
 def coverartarchive_cover(mbid):
@@ -48,6 +49,20 @@ def coverdata(mbid):
     data = retrieve_url(url)
     if data is not None:
         return json.loads(data)
+
+
+def enrich_metadata(metadata):
+    
+    if metadata.albummbid is None:
+        return
+    key = metadata.songId()
+    if good_enough(key):
+        return
+    
+    artUrl = coverartarchive_cover(metadata.albummbid)
+    # check if the cover is improved
+    metadata.externalArtUrl = best_picture_url(key, artUrl)
+    
 
 """
 print(coverdata("219b202d-290e-3960-b626-bf852a63bc50"))

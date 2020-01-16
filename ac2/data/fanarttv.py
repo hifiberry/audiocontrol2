@@ -24,13 +24,18 @@ import json
 
 # Use caching
 from ac2.http import retrieve_url
+from ac2.data.coverarthandler import good_enough, best_picture_url
 
 APIKEY="749a8fca4f2d3b0462b287820ad6ab06"
 
-def get_fanart_cover(artistmbid, albummbid):
+def get_fanart_cover(artistmbid, albummbid, allow_artist_picture = False):
     url = "http://webservice.fanart.tv/v3/music/{}?api_key={}".format(artistmbid, APIKEY)
     try:
         json_text = retrieve_url(url)
+        if json_text is None:
+            logging.debug("artist does not exit on fanart.tv")
+            return 
+        
         data = json.loads(json_text)
         
         # Try to find the album cover first
@@ -42,24 +47,31 @@ def get_fanart_cover(artistmbid, albummbid):
             logging.debug("found no album cover on fanart.tv")
         
         # If this doesn't exist, use artist cover
-        try:
-            imageurl = data["artistthumb"][1]["url"]
-            logging.debug("found artist picture on fanart.tv")
-            return imageurl
-        except KeyError:
-            logging.debug("found no artist picture on fanart.tv")
+        if allow_artist_picture:
+            try:
+                imageurl = data["artistthumb"][1]["url"]
+                logging.debug("found artist picture on fanart.tv")
+                return imageurl
+            except KeyError:
+                logging.debug("found no artist picture on fanart.tv")
 
     
     except Exception as e:
         logging.debug("couldn't retrieve data from fanart.tv (%s)",e)
 
 
-def enrich_metadata(metadata):
+def enrich_metadata(metadata, allow_artist_picture = False):
     
     if metadata.artistmbid is None:
+        logging.debug("artist mbid unknpown, can't use fanart.tv")
         return
     
-    if metadata.externalArtUrl is not None:
-        return 
+    key = metadata.songId()
+    if good_enough(key):
+        logging.debug("existing cover is good enough, skipping fanart.tv")
+        return
     
-    metadata.externalArtUrl = get_fanart_cover(metadata.artistmbid, metadata.albummbid)
+    url = get_fanart_cover(metadata.artistmbid, 
+                           metadata.albummbid, 
+                           allow_artist_picture)
+    metadata.externalArtUrl = best_picture_url(key, url)
