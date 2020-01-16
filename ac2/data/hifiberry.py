@@ -29,7 +29,7 @@ def hifiberry_cover(song_mbid, album_mbid):
     logging.debug("trying to find coverart for %s from hifiberry", song_mbid)
 
     try:
-        url = "https://coverart.hifiberry.com/cover/{}/{}".format(song_mbid, album_mbid)
+        url = "https://musicdb.hifiberry.com/cover/{}/{}".format(song_mbid, album_mbid)
         cover_url = retrieve_url(url)
         if cover_url is None or len(cover_url == 0):
             return None
