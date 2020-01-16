@@ -474,8 +474,9 @@ class MPRISController():
             if self.playername(self.active_player) == SPOTIFY_NAME and \
                 not(playing):
                 spotify_stopped += 1
-                if spotify_stopped < 10:
-                    logging.debug("spotify workaround %s", spotify_stopped)
+                if spotify_stopped < 26:
+                    if (spotify_stopped % 5) == 0:
+                        logging.debug("spotify workaround %s", spotify_stopped)
                     playing = True
 
             # Woraround for LMS muting the output after stopping the
