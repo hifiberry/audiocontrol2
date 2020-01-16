@@ -62,6 +62,9 @@ def get_fanart_cover(artistmbid, albummbid, allow_artist_picture = False):
 
 def enrich_metadata(metadata, allow_artist_picture = False):
     
+    if metadata.best_cover_found:
+        return
+    
     if metadata.artistmbid is None:
         logging.debug("artist mbid unknpown, can't use fanart.tv")
         return
