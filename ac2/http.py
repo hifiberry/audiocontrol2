@@ -22,7 +22,10 @@ SOFTWARE.
 
 import logging
 from urllib.request import Request,urlopen
+from urllib.parse import urlencode
 from expiringdict import ExpiringDict
+
+import requests
 
 from ac2.data.identities import host_uuid, release
 
@@ -52,4 +55,19 @@ def retrieve_url(url):
         except Exception as e:
             logging.warning("HTTP exception while retrieving %s: %s", url, e)
             negativeCache[url] = True
-
+            
+            
+def post_data(url, data):
+    
+    logging.error("1")
+    res = None
+    try:
+        logging.info("1")
+        headers = {'User-agent': 'audiocontrol/{}/{}'.format(release(), host_uuid())}
+        logging.info("2")
+        requests.post(url, data = data, headers=headers)
+        logging.info("3")
+    except Exception as e:
+        logging.warning("HTTP exception while posting %s: %s", url, e)
+        
+    return res
