@@ -37,15 +37,18 @@ def hifiberry_cover(song_mbid, album_mbid, artist_mbid):
             (cover_url, width, height) = cover_data.decode('utf8').split("|")
             if cover_url=="":
                 cover_url = None
+                
+            if cover_url is None:
+                logging.info("no cover found on hifiberry musicdb")
             return (cover_url, int(width), int(height))
     except Exception as e:
         logging.warn("can't load cover for %s: %s", song_mbid, e)
         logging.exception(e)
     
-    return (None, 0, 0)
+    
 
 def send_update(metadata):
-    if metadata.best_cover_found:
+    if metadata.hifiberry_cover_found:
         return 
     
     if metadata.mbid is None:
@@ -72,6 +75,7 @@ def send_update(metadata):
         }
     
     try:
+        logging.info("sending cover update to hifiberry musicdb")
         url = "{}/cover-update".format(BASE_URL)
         post_data(url,data)
     except Exception as e:
@@ -90,8 +94,8 @@ def enrich_metadata(metadata):
     key=metadata.songId()
     metadata.externalArtUrl = best_picture_url(key, artUrl, width, height)
     
-    if metadata.externalArtUrl== artUrl:
-        metadata.best_cover_found = True
+    if metadata.externalArtUrl == artUrl and artUrl is not None:
+        metadata.hifiberry_cover_found = True
     
     
     

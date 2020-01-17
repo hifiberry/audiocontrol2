@@ -71,7 +71,7 @@ class Metadata:
         self.host_uuid = None
         self.releaseDate = None
         self.trackid = None
-        self.best_cover_found=False
+        self.hifiberry_cover_found=False
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):

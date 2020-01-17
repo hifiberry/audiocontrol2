@@ -53,7 +53,7 @@ def coverdata(mbid):
 
 def enrich_metadata(metadata):
     
-    if metadata.best_cover_found:
+    if metadata.hifiberry_cover_found:
         return
     
     if metadata.albummbid is None:
