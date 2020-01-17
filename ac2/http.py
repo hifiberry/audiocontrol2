@@ -62,11 +62,8 @@ def post_data(url, data):
     logging.error("1")
     res = None
     try:
-        logging.info("1")
         headers = {'User-agent': 'audiocontrol/{}/{}'.format(release(), host_uuid())}
-        logging.info("2")
         requests.post(url, data = data, headers=headers)
-        logging.info("3")
     except Exception as e:
         logging.warning("HTTP exception while posting %s: %s", url, e)
         
