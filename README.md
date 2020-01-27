@@ -1,3 +1,6 @@
+![Python application](https://github.com/hifiberry/audiocontrol2/workflows/Python%20application/badge.svg)
+[![GitHub contributors](https://img.shields.io/github/contributors/hifiberry/audiocontrol2.svg)](https://GitHub.com/hifiberry/audiocontrol2/graphs/contributors/)
+
 # Audiocontrol2
 
 This is a central part of HiFiBerryOS that handles multiple concurrent media players.
