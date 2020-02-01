@@ -234,6 +234,29 @@ def parse_config(debugmode=False):
                                           "keyboard controller")
 
             logging.info("started keyboard listener")
+            
+    # Rotary encoder
+    if "rotary" in config.sections():
+        moduleok = False
+        try:
+            from ac2.plugins.control.rotary import Rotary
+            moduleok = True
+        except Exception as e:
+            logging.error("can't activate rotary controller: %s", e)
+
+        if moduleok:
+            try:
+                rotary_controller = Rotary()
+                rotary_controller.set_player_control(mpris)
+                rotary_controller.set_volume_control(volume_control)
+                rotary_controller.start()
+                watchdog.add_monitored_thread(rotary_controller,
+                                              "rotary controller")
+                logging.info("started rotary listener")
+            except Exception as e:
+                logging.error("Exception duriong rotary control initialization")
+                logging.exception(e)
+        
 
     # Metadata push to GUI
     if "metadata_post" in config.sections():
