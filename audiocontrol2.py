@@ -246,7 +246,7 @@ def parse_config(debugmode=False):
 
         if moduleok:
             try:
-                rotary_controller = Rotary()
+                rotary_controller = Rotary(config["rotary"])
                 rotary_controller.set_player_control(mpris)
                 rotary_controller.set_volume_control(volume_control)
                 rotary_controller.start()

@@ -28,6 +28,35 @@ class Rotary(Controller):
 
     def __init__(self, params: Dict[str, str]=None):
         super().__init__()
+        
+        self.clk = 4
+        self.dt = 17
+        self.sw = 27
+        
+        if params is None:
+            params={}
+        
+        if "clk" in params:
+            try:
+                self.clk = int(params["clk"])
+            except:
+                logging.error("can't parse %s",params["clk"])
+            
+
+        if "dt" in params:
+            try:
+                self.dt = int(params["dt"])
+            except:
+                logging.error("can't parse %s",params["dt"])
+
+        if "sw" in params:
+            try:
+                self.sw = int(params["sw"])
+            except:
+                logging.error("can't parse %s",params["sw"])
+                
+        logging.info("initializing rotary controller on GPIOs clk=%s,dt=%s,sw=%s",
+                     self.clk, self.dt, self.sw)
 
         self.encoder = pyky040.Encoder(CLK=4, DT=17, SW=27)
         self.encoder.setup(scale_min=0, 
