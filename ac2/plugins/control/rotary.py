@@ -32,6 +32,7 @@ class Rotary(Controller):
         self.clk = 4
         self.dt = 17
         self.sw = 27
+        self.step = 5
         
         if params is None:
             params={}
@@ -55,8 +56,14 @@ class Rotary(Controller):
             except:
                 logging.error("can't parse %s",params["sw"])
                 
-        logging.info("initializing rotary controller on GPIOs clk=%s,dt=%s,sw=%s",
-                     self.clk, self.dt, self.sw)
+        if "step" in params:
+            try:
+                self.step = int(params["step"])
+            except:
+                logging.error("can't parse %s",params["step"])
+                
+        logging.info("initializing rotary controller on GPIOs clk=%s,dt=%s,sw=%s, step=%s%",
+                     self.clk, self.dt, self.sw, self.step)
 
         self.encoder = pyky040.Encoder(CLK=4, DT=17, SW=27)
         self.encoder.setup(scale_min=0, 
@@ -68,13 +75,13 @@ class Rotary(Controller):
             
     def increase(self,val):
         if self.volumecontrol is not None:
-            self.volumecontrol.change_volume_percent(5)
+            self.volumecontrol.change_volume_percent(self.step)
         else:
             logging.info("no volume control, ignoring rotary control")
 
     def decrease(self,val):
         if self.volumecontrol is not None:
-            self.volumecontrol.change_volume_percent(-5)
+            self.volumecontrol.change_volume_percent(-self.step)
         else:
             logging.info("no volume control, ignoring rotary control")
 
