@@ -11,7 +11,7 @@ To understand the code a bit, let's first have a look at the hardware. We're usi
 that is often called "KY040". The board is a strandard rotary controller with a few external resistors. These are 
 necessary! You can't connect a rotary controller to the Pi without these.
 
-![alt text](ky040.jpg)
+![KY040 rotary controller](ky040.jpg)
 
 It will be connected to the Pi as follows:
 
@@ -28,6 +28,9 @@ Make sure you understand the difference between Raspberry Pi GPIOs and Pin numbe
 You can also use other unused GPIOs.We use these as they are close together. Cabled are directly soldered onto the Pins 
 on a HiFiBerry MiniAmp like this:
 
+![Soldered onto the MiniAmp](rotary-soldered.jpg)
+While soldering onto the MiniAmp does void warranty, the MiniAmp is quite cheap and you might just risk t
+his.
 ## Software
 
 The module use for the control is [rotary.py](https://github.com/hifiberry/audiocontrol2/blob/master/ac2/plugins/control/rotary.py)
