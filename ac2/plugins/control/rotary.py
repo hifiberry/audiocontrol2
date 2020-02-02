@@ -62,10 +62,11 @@ class Rotary(Controller):
             except:
                 logging.error("can't parse %s",params["step"])
                 
-        logging.info("initializing rotary controller on GPIOs clk=%s,dt=%s,sw=%s, step=%s%",
+        logging.info("initializing rotary controller on GPIOs "
+                     " clk=%s,dt=%s,sw=%s, step=%s%",
                      self.clk, self.dt, self.sw, self.step)
 
-        self.encoder = pyky040.Encoder(CLK=4, DT=17, SW=27)
+        self.encoder = pyky040.Encoder(CLK=self.clk, DT=self.dt, SW=self.sw)
         self.encoder.setup(scale_min=0, 
                            scale_max=100, 
                            step=1, 
