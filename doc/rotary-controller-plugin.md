@@ -8,7 +8,7 @@ Rotation will be mapped to volume, while the button press will be mapped to play
 ## Hardware
 
 To understand the code a bit, let's first have a look at the hardware. We're using a standard rotary controller 
-that is often called "KY040". The board is a strandard rotary controller with a few external resistors. These are 
+that is often called "KY040". The board is a standard rotary controller with a few external resistors. These are 
 necessary! You can't connect a rotary controller to the Pi without these.
 
 ![KY040 rotary controller](ky040.jpg)
