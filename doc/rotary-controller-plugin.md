@@ -11,6 +11,8 @@ To understand the code a bit, let's first have a look at the hardware. We're usi
 that is often called "KY040". The board is a strandard rotary controller with a few external resistors. These are 
 necessary! You can't connect a rotary controller to the Pi without these.
 
+![alt text](ky040.jpg)
+
 It will be connected to the Pi as follows:
 
 | Encoder | GPIO Pin Pi | GPIO number |
@@ -20,6 +22,8 @@ It will be connected to the Pi as follows:
 |CLK|7|4|
 |DT|11|17|
 |SW|13|27|
+
+Make sure you understand the difference between Raspberry Pi GPIOs and Pin numbers! For the configuration, you need to use the GPIO number, not the physical pin numbers.
 
 You can also use other unused GPIOs.We use these as they are close together. Cabled are directly soldered onto the Pins 
 on a HiFiBerry MiniAmp like this:
