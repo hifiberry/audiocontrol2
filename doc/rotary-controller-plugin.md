@@ -160,3 +160,22 @@ We're almost done here, only one method is missing:
 
 This makes sure, the plugin monitors the status of the GPIO pins the whole time and calls
 the configured methods if there is some action.
+
+## Configuration
+
+Once you have configured the plugin, you need to put into one of the directories in audiocontrol's PYTHONPATH
+If you're using HiFiBerryOS, we recommend to put it into /data/ac2plugins. Don't put it into /opt/... as these
+files will be lost on the next update.
+
+Now, you can configure it in /etc/audiocontrol2.conf:
+
+```
+[controller:ac2.plugins.control.rotary.Rotary]
+clk = 4
+dt = 17
+sw = 27
+step = 5
+```
+
+The "[controller:ac2.plugins.control.rotary.Rotary]" tells audiocontrol to load the controller class. 
+The settings in the following lines will be send to the constructor as the "params" argument
