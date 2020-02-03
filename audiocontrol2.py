@@ -66,7 +66,7 @@ def print_state(signalNumber=None, frame=None):
         print("\n" + str(mpris))
 
 
-def create_object(classname):
+def create_object(classname, param = None):
     #    [module_name, class_name] = classname.rsplit(".", 1)
     #    module = __import__(module_name)
     #    my_class = getattr(module, class_name)
@@ -74,7 +74,11 @@ def create_object(classname):
     import importlib
     module_name, class_name = classname.rsplit(".", 1)
     MyClass = getattr(importlib.import_module(module_name), class_name)
-    instance = MyClass()
+    
+    if param is None:
+        instance = MyClass()
+    else:
+        instance = MyClass(param)
 
     return instance
 
@@ -236,27 +240,41 @@ def parse_config(debugmode=False):
             logging.info("started keyboard listener")
             
     # Rotary encoder
-    if "rotary" in config.sections():
-        moduleok = False
-        try:
-            from ac2.plugins.control.rotary import Rotary
-            moduleok = True
-        except Exception as e:
-            logging.error("can't activate rotary controller: %s", e)
-
-        if moduleok:
+#     if "rotary" in config.sections():
+#         moduleok = False
+#         try:
+#             from ac2.plugins.control.rotary import Rotary
+#             moduleok = True
+#         except Exception as e:
+#             logging.error("can't activate rotary controller: %s", e)
+# 
+#         if moduleok:
+#             try:
+#                 rotary_controller = Rotary(config["rotary"])
+#                 rotary_controller.set_player_control(mpris)
+#                 rotary_controller.set_volume_control(volume_control)
+#                 rotary_controller.start()
+#                 watchdog.add_monitored_thread(rotary_controller,
+#                                               "rotary controller")
+#                 logging.info("started rotary listener")
+#             except Exception as e:
+#                 logging.error("Exception duriong rotary control initialization")
+#                 logging.exception(e)
+                
+    # Additional controller modules
+    for section in config.sections():
+        if section.startswith("controller:"):
             try:
-                rotary_controller = Rotary(config["rotary"])
-                rotary_controller.set_player_control(mpris)
-                rotary_controller.set_volume_control(volume_control)
-                rotary_controller.start()
-                watchdog.add_monitored_thread(rotary_controller,
-                                              "rotary controller")
-                logging.info("started rotary listener")
+                [_,classname] = section.split(":",1)
+                params = config[section]
+                controller = create_object(classname, params)
+                controller.set_player_control(mpris)
+                controller.set_volume_control(volume_control)
+                controller.start()
+                logging.info("started controller %s", controller)
             except Exception as e:
                 logging.error("Exception duriong rotary control initialization")
                 logging.exception(e)
-        
 
     # Metadata push to GUI
     if "metadata_post" in config.sections():
