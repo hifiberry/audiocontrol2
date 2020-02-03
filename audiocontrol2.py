@@ -219,26 +219,7 @@ def parse_config(debugmode=False):
         logging.info("volume control not configured, "
                      "disabling volume control support")
 
-    # Keyboard volume control/remote control
-    if "keyboard" in config.sections():
-        moduleok = False
-        try:
-            from ac2.plugins.control.keyboard import Keyboard
-            moduleok = True
-        except Exception as e:
-            logging.error("can't activate keyboard: %s", e)
-
-        if moduleok:
-            keyboard_controller = Keyboard()
-            keyboard_controller.set_player_control(mpris)
-            keyboard_controller.set_volume_control(volume_control)
-
-            keyboard_controller.start()
-            watchdog.add_monitored_thread(keyboard_controller,
-                                          "keyboard controller")
-
-            logging.info("started keyboard listener")
-            
+           
     # Additional controller modules
     for section in config.sections():
         if section.startswith("controller:"):
