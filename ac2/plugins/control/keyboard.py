@@ -27,6 +27,8 @@ class Keyboard(Controller):
 
     def __init__(self, params: Dict[str, str]=None):
         super().__init__()
+        
+        self.name = "keyboard"
 
         if params is None or len(params) == 0:
             # Default code table that works with this remote control:

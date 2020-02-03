@@ -34,6 +34,8 @@ class Rotary(Controller):
         self.sw = 27
         self.step = 5
         
+        self.name = "rotary"
+        
         if params is None:
             params={}
         

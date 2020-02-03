@@ -30,6 +30,7 @@ class Controller( Thread ):
         super().__init__()
         self.volumecontrol = None
         self.playercontrol = None
+        self.name = "generic controller"
 
     def set_volume_control( self, volumecontrol ):
         self.volumecontrol = volumecontrol
@@ -37,3 +38,5 @@ class Controller( Thread ):
     def set_player_control( self, playercontrol ):
         self.playercontrol = playercontrol
 
+    def __str__(self):
+        return self.name
