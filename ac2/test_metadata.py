@@ -22,10 +22,14 @@ SOFTWARE.
 
 import unittest
 
-from ac2.metadata import Metadata
+from ac2.metadata import Metadata, enrich_metadata
+
+
+    
 
 class MetaDataTest(unittest.TestCase):
 
+    md_updated = False
 
     def test_init(self):
         md = Metadata(
@@ -94,6 +98,18 @@ class MetaDataTest(unittest.TestCase):
         self.assertIn("tag2", md1.tags)
         self.assertIn("tag3", md1.tags)
         
+    def test_song_id(self):
+        md1=Metadata("artist1","song1",albumTitle="abum1")
+        md2=Metadata("artist1","song1",albumTitle="abum2")
+        md3=Metadata("artist2","song1")
+        md4=Metadata("artist2","song1",albumTitle="abum1")
+        
+        self.assertEqual(md1.songId(),md2.songId())
+        self.assertEqual(md3.songId(),md4.songId())
+        self.assertNotEqual(md1.songId(),md3.songId())
+        self.assertNotEqual(md2.songId(),md3.songId())
+        self.assertNotEqual(md1.songId(),md4.songId())
+        
         
     def test_unknown(self):
         
@@ -120,6 +136,33 @@ class MetaDataTest(unittest.TestCase):
         self.assertFalse(md9.is_unknown())
         self.assertFalse(md10.is_unknown())
         self.assertFalse(md11.is_unknown())
+        
+        
+    def test_enrich(self):
+        # We should be able to get some metadata for this one
+        md=Metadata("Bruce Springsteen","The River")
+        self.md_updated = False
+        self.updates = None
+        song_id = md.songId()
+        self.song_id = None
+        
+        self.assertIsNone(md.artUrl)
+        self.assertIsNone(md.externalArtUrl)
+        self.assertFalse(MetaDataTest.md_updated)
+        enrich_metadata(md, callback=self)
+        
+        self.assertIsNotNone(md.externalArtUrl)       
+        self.assertIsNotNone(md.mbid)
+        self.assertIsNotNone(self.updates)
+        self.assertIn("externalArtUrl", self.updates)
+        self.assertIn("mbid",self.updates)
+        self.assertIn("artistmbid",self.updates)
+        self.assertIn("albummbid",self.updates)
+        self.assertEqual(self.song_id, song_id)
+        
+    def update_metadata_attributes(self, updates, song_id):
+        self.updates = updates
+        self.song_id = song_id
 
 if __name__ == "__main__":
     unittest.main()
