@@ -61,6 +61,8 @@ def send_update(metadata):
     
     if artUrl is not None:
         (width, height) = best_picture_size(key)
+    else:
+        return
     
     if metadata.albummbid is not None:
         mbid = metadata.albummbid
