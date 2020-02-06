@@ -223,8 +223,8 @@ def parse_config(debugmode=False):
     # Additional controller modules
     for section in config.sections():
         if section.startswith("controller:"):
+            [_,classname] = section.split(":",1)
             try:
-                [_,classname] = section.split(":",1)
                 params = config[section]
                 controller = create_object(classname, params)
                 controller.set_player_control(mpris)
@@ -232,7 +232,8 @@ def parse_config(debugmode=False):
                 controller.start()
                 logging.info("started controller %s", controller)
             except Exception as e:
-                logging.error("Exception duriong rotary control initialization")
+                logging.error("Exception during controller %s initialization",
+                              classname)
                 logging.exception(e)
 
     # Metadata push to GUI
