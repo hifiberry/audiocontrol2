@@ -1,5 +1,5 @@
 '''
-Copyright (c) 2019 Modul 9/HiFiBerry
+Copyright (c) 2020 Modul 9/HiFiBerry
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -137,10 +137,17 @@ class Metadata:
         return copy.copy(self)
 
     def is_unknown(self):
-        if self.artist is None and self.title is None:
-            return True
+        
+        unknown_artist = False
+        unknown_title = False
+        
+        if str(self.artist).lower() in ["","none","unknown","unknown artist"]:
+            unknown_artist = True
 
-        if self.artist == "unknown artist" and self.title == "unknown title":
+        if str(self.title).lower() in ["","none","unknown","unknown title"]:
+            unknown_title= True
+            
+        if unknown_artist and unknown_title:
             return True
 
         return False
