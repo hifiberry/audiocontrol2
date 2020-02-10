@@ -329,7 +329,7 @@ class AudioControlWebserver(MetadataDisplay):
 
             return True
 
-        if command in ("next", "previous", "play", "pause", "playpause"):
+        if command in ("next", "previous", "play", "pause", "playpause", "stop"):
             if self.player_control is None:
                 logging.info(
                     "no controller connected, ignoring websocket command")
@@ -347,12 +347,15 @@ class AudioControlWebserver(MetadataDisplay):
                     self.player_control.playpause(pause=True)
                 elif command == "playpause":
                     self.player_control.playpause(pause=None)
+                elif command == "stop":
+                    self.player_control.stop()
                 else:
                     logging.error("unknown command %s", command)
                     return False
-            except:
-                logging.error("failed to send command %s",
-                              command)
+            except Exception as e:
+                logging.error("failed to send command %s (%s)",
+                              command, e)
+                logging.exception(e)
                 return False
 
             return True
