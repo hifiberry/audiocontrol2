@@ -148,9 +148,13 @@ def enrich_metadata(metadata):
         if metadata.loved is None and "userloved" in trackdata:
             metadata.loved = (int(trackdata["userloved"]) > 0)
 
-        if metadata.wiki is None and "wiki" in trackdata:
-            metadata.wiki = trackdata["wiki"]
-            logging.debug("found Wiki entry")
+        try:
+            if metadata.wiki is None and "wiki" in trackdata:
+                metadata.wiki = trackdata["wiki"]
+                logging.debug("found Wiki entry")
+        except Exception as e:
+            logging.error("couldn't handle wiki for %s", metadata)
+            logging.exception(e)
 
         if "toptags" in trackdata and "tag" in trackdata["toptags"]:
             for tag in trackdata["toptags"]["tag"]:
