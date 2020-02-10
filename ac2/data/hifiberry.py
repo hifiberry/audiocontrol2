@@ -41,6 +41,11 @@ def hifiberry_cover(song_mbid, album_mbid, artist_mbid, player="unknown"):
             if cover_url is None:
                 logging.info("no cover found on hifiberry musicdb")
             return (cover_url, int(width), int(height))
+        
+        else:
+            logging.info("did not receive cover data from %s", url)
+            return (None, 0, 0)
+            
     except Exception as e:
         logging.warn("can't load cover for %s: %s", song_mbid, e)
         logging.exception(e)
