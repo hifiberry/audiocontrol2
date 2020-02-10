@@ -27,11 +27,11 @@ from ac2.http import retrieve_url, post_data
 
 BASE_URL="https://musicdb.hifiberry.com"
 
-def hifiberry_cover(song_mbid, album_mbid, artist_mbid):
+def hifiberry_cover(song_mbid, album_mbid, artist_mbid, player="unknown"):
     logging.debug("trying to find coverart for %s from hifiberry", song_mbid)
 
     try:
-        url = "{}/cover/{}/{}/{}".format(BASE_URL, song_mbid, album_mbid, artist_mbid)
+        url = "{}/cover/{}/{}/{}/{}".format(BASE_URL, song_mbid, album_mbid, artist_mbid, player)
         cover_data = retrieve_url(url)
         if cover_data is not None and len(cover_data)>0:
             (cover_url, width, height) = cover_data.decode('utf8').split("|")
@@ -90,7 +90,11 @@ def enrich_metadata(metadata):
     if metadata.mbid is None:
         return
     
-    (artUrl, width, height) = hifiberry_cover(metadata.mbid, metadata.albummbid, metadata.artistmbid)
+    (artUrl, width, height) = hifiberry_cover(
+        metadata.mbid, 
+        metadata.albummbid, 
+        metadata.artistmbid,
+        metadata.playerName)
     
     # check if the cover is improved
     key=metadata.songId()

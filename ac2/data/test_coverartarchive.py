@@ -10,18 +10,26 @@ from ac2.data import coverartarchive
 
 class Test(unittest.TestCase):
 
-    def testGetCover(self):
+    def test_get_cover(self):
         md = Metadata()
         # A Rush of Blood to the Head, Coldplay
+        md.artist = "Coldplay"  # Necessary as unknown song won't be retrieved
         md.albummbid = "219b202d-290e-3960-b626-bf852a63bc50"
-        assert md.artUrl is None
-        assert md.externalArtUrl is None
+        self.assertIsNone(md.artUrl)
+        self.assertIsNone(md.externalArtUrl)
    
         coverartarchive.enrich_metadata(md)
 
-        assert md.artUrl is None
-        assert md.externalArtUrl is not None
-
+        self.assertIsNone(md.artUrl)
+        self.assertIsNotNone(md.externalArtUrl)
+        
+    def test_unknown(self):
+        md = Metadata()
+        coverartarchive.enrich_metadata(md)
+        
+        self.assertIsNone(md.artUrl)
+        self.assertIsNone(md.externalArtUrl)
+   
 
 if __name__ == "__main__":
     unittest.main()

@@ -65,6 +65,10 @@ def enrich_metadata(metadata, allow_artist_picture = False):
     if metadata.hifiberry_cover_found:
         return
     
+    if metadata.is_unknown():
+        # Do not try to retrieve metadata for unknown songs
+        return
+    
     if metadata.artistmbid is None:
         logging.debug("artist mbid unknpown, can't use fanart.tv")
         return

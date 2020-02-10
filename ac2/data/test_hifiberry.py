@@ -28,9 +28,10 @@ from ac2.data import hifiberry
 
 class Test(unittest.TestCase):
 
-    def testGetCover(self):
+    def test_get_cover(self):
         md = Metadata()
         # A Rush of Blood to the Head, Coldplay
+        md.artist="Coldplay"
         md.mbid="58b961e1-a2ef-4e92-a82b-199b15bb3cd8"
         md.albummbid = "219b202d-290e-3960-b626-bf852a63bc50"
         self.assertIsNone(md.artUrl)

@@ -56,6 +56,10 @@ def enrich_metadata(metadata):
     if metadata.hifiberry_cover_found:
         return
     
+    if metadata.is_unknown():
+        # Do not try to retrieve metadata for unknown songs
+        return
+    
     if metadata.albummbid is None:
         return
     key = metadata.songId()
