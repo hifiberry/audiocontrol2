@@ -153,7 +153,7 @@ def enrich_metadata(metadata):
                 metadata.wiki = trackdata["wiki"]
                 logging.debug("found Wiki entry")
         except Exception as e:
-            logging.error("couldn't handle wiki for %s", metadata)
+            logging.error("couldn't handle wiki for %s", metadata.__dict__)
             logging.exception(e)
 
         if "toptags" in trackdata and "tag" in trackdata["toptags"]:
