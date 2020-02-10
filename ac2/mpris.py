@@ -543,6 +543,9 @@ class MPRISController():
             else:
                 self.send_command(MPRIS_PLAY)
 
+    def stop(self):
+            self.send_command(MPRIS_STOP)
+
     # ##
     # ## end controller functions
     # ##
