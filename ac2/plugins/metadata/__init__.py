@@ -37,8 +37,9 @@ class MetadataDisplay:
     def notify_async(self, metadata):
         if self.notifierthread is None or not(self.notifierthread.is_alive()):
             self.notifierthread = threading.Thread(target=self.notify,
-                                                   args=(metadata,))
+                                                   args=(metadata,),
+                                                   name="notifier thread "+self.__str__())
             self.notifierthread.start()
         else:
-            logging.info("notifier background thread still running, "
-                         "not sending notify")
+            logging.info("notifier background thread %s still running, "
+                         "not sending notify", self.notifierthread)
