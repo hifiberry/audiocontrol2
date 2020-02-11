@@ -61,7 +61,9 @@ class MetadataHTTPRequest(MetadataDisplay):
 
         if (self.request_type == "json"):
             try:
-                r = requests.post(self.url, json=metadata.__dict__)
+                r = requests.post(self.url, 
+                                  json=metadata.__dict__,
+                                  timeout=10)
             except Exception as e:
                 logging.error("Exception when posting metadata: %s", e)
                 return
