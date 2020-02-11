@@ -134,8 +134,10 @@ def enrich_metadata(metadata):
             url = bestImage(trackdata)
             if url is not None:
                 metadata.externalArtUrl = best_picture_url(key, url)
-                logging.info("Got track cover for %s/%s from Last.FM: %s",
-                             metadata.artist, metadata.albumTitle,
+                logging.info("Got track cover for %s/%s/%s from Last.FM: %s",
+                             metadata.artist,
+                             metadata.title,
+                             metadata.albumTitle,
                              metadata.externalArtUrl)
 
         if metadata.playCount is None and "userplaycount" in trackdata:
@@ -148,6 +150,12 @@ def enrich_metadata(metadata):
         if metadata.loved is None and "userloved" in trackdata:
             metadata.loved = (int(trackdata["userloved"]) > 0)
 
+        # Workaround for "missing attribute wiki" bug
+        try:
+            _ = metadata.wiki
+        except AttributeError:
+            metadata.wiki = None
+            
         try:
             if metadata.wiki is None and "wiki" in trackdata:
                 metadata.wiki = trackdata["wiki"]
