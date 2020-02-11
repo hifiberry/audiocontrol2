@@ -22,6 +22,7 @@ SOFTWARE.
 
 import threading
 import logging
+import datetime
 
 
 class MetadataDisplay:
@@ -29,6 +30,7 @@ class MetadataDisplay:
     def __init__(self):
         logging.debug("initializing MetadataDisplay instance")
         self.notifierthread = None
+        self.starttime = None
         pass
 
     def notify(self, metadata):
@@ -39,7 +41,10 @@ class MetadataDisplay:
             self.notifierthread = threading.Thread(target=self.notify,
                                                    args=(metadata,),
                                                    name="notifier thread "+self.__str__())
+            self.notifystarttime = datetime.datetime.now()
             self.notifierthread.start()
         else:
-            logging.info("notifier background thread %s still running, "
-                         "not sending notify", self.notifierthread)
+            logging.info("notifier background thread %s still running after %s seconds, "
+                         "not sending notify", 
+                         datetime.datetime.now() - self.notifystarttime,
+                         self.notifierthread)
