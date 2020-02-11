@@ -273,7 +273,9 @@ class AudioControlWebserver(MetadataDisplay):
     def update_volume(self, vol):
         self.volume = vol
 
-    def send_metadata_update(self, updates):
+    def send_metadata_update(self, updates, song_id = None):
+        if song_id is None and self.metadata is not None:
+            song_id = self.metadata.songId()
         for u in self.updaters:
             try:
                 logging.debug("sending update %s to %s", u, updates)
