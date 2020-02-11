@@ -23,9 +23,34 @@ SOFTWARE.
 import time
 import logging
 import datetime
+from threading import Thread
 
 from ac2.plugins.metadata import MetadataDisplay
 import pylast
+
+class ScrobbleSender(Thread):
+    
+    def __init__(self, lastfm, metadata):
+        super().__init__()
+        self.lastfm = lastfm
+        self.metadata = metadata
+    
+    def run(self):
+        try:
+            logging.info("scrobbling " + str(self.metadata))
+            unix_timestamp = int(time.mktime(
+                datetime.datetime.now().timetuple()))
+            self.lastfm.scrobble(
+                artist=self.metadata.artist,
+                title=self.metadata.title,
+                timestamp=unix_timestamp)
+        except Exception as e:
+            logging.error("Could not scrobble %s/%s: %s",
+                          self.metadata.artist,
+                          self.metadata.title,
+                          e)
+            self.network = None
+    
 
 
 class LastFMScrobbler(MetadataDisplay):
@@ -117,21 +142,14 @@ class LastFMScrobbler(MetadataDisplay):
         self.current_metadata = metadata
 
         if (lastsong_md is not None) and not(lastsong_md.is_unknown()):
-            try:
-                logging.info("scrobbling " + str(lastsong_md))
-                unix_timestamp = int(time.mktime(
-                    datetime.datetime.now().timetuple()))
-                self.get_network().scrobble(artist=lastsong_md.artist,
-                                      title=lastsong_md.title,
-                                      timestamp=unix_timestamp)
-            except Exception as e:
-                logging.error("Could not scrobble %s/%s: %s",
-                              lastsong_md.artist,
-                              lastsong_md.title,
-                              e)
-                self.network = None
+            sender = ScrobbleSender(self.get_network(), lastsong_md)
+            sender.start()
         else:
             logging.info("no track data, not scrobbling %s", lastsong_md)
+            
+        
+    
+        
 
     def __str__(self):
         return "lastfmscrobbler@{}".format(self.networkname)
