@@ -156,13 +156,9 @@ def enrich_metadata(metadata):
         except AttributeError:
             metadata.wiki = None
             
-        try:
-            if metadata.wiki is None and "wiki" in trackdata:
-                metadata.wiki = trackdata["wiki"]
-                logging.debug("found Wiki entry")
-        except Exception as e:
-            logging.error("couldn't handle wiki for %s", metadata.__dict__)
-            logging.exception(e)
+        if metadata.wiki is None and "wiki" in trackdata:
+            metadata.wiki = trackdata["wiki"]
+            logging.debug("found Wiki entry")
 
         if "toptags" in trackdata and "tag" in trackdata["toptags"]:
             for tag in trackdata["toptags"]["tag"]:
