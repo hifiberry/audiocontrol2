@@ -130,11 +130,11 @@ class MetaDataTest(unittest.TestCase):
         self.assertTrue(md3.is_unknown())
         self.assertTrue(md4.is_unknown())
         self.assertTrue(md5.is_unknown())
-        self.assertFalse(md6.is_unknown())
-        self.assertFalse(md7.is_unknown())
-        self.assertFalse(md8.is_unknown())
-        self.assertFalse(md9.is_unknown())
-        self.assertFalse(md10.is_unknown())
+        self.assertTrue(md6.is_unknown())
+        self.assertTrue(md7.is_unknown())
+        self.assertTrue(md8.is_unknown())
+        self.assertTrue(md9.is_unknown())
+        self.assertTrue(md10.is_unknown())
         self.assertFalse(md11.is_unknown())
         
         

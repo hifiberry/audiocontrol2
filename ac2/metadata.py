@@ -136,20 +136,26 @@ class Metadata:
         return copy.copy(self)
 
     def is_unknown(self):
-        
-        unknown_artist = False
-        unknown_title = False
-        
-        if str(self.artist).lower() in ["","none","unknown","unknown artist"]:
-            unknown_artist = True
-
-        if str(self.title).lower() in ["","none","unknown","unknown title"]:
-            unknown_title= True
-            
-        if unknown_artist and unknown_title:
+    
+        if self.artist_unknown() or self.title_unknown():
             return True
 
         return False
+    
+    def artist_unknown(self):
+        if str(self.artist).lower() in ["","none","unknown","unknown artist"]:
+            return True
+        else:
+            return False
+        
+    def title_unknown(self):
+        if str(self.title).lower() in ["","none","unknown","unknown title","unknown song"]:
+            return True
+        else:
+            return False
+        
+    
+        
 
     def songId(self):
         return "{}/{}".format(self.artist, self.title)
@@ -169,7 +175,7 @@ def enrich_metadata(metadata, callback=None):
     if external_metadata:
 
         metadata.host_uuid = host_uuid()
-
+        
         # Try musicbrainzs first
         try:
             musicbrainz.enrich_metadata(metadata)
@@ -211,11 +217,10 @@ def enrich_metadata(metadata, callback=None):
         except Exception as e:
             logging.exception(e)
     
-
     if callback is not None:
         callback.update_metadata_attributes(metadata.__dict__, songId)
 
-
+ 
 def enrich_metadata_bg(metadata, callback):
     md = metadata.copy()
     threading.Thread(target=enrich_metadata, args=(md, callback)).start()
