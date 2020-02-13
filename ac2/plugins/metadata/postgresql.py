@@ -22,6 +22,7 @@ SOFTWARE.
 
 from datetime import datetime, timedelta
 import logging
+from typing import Dict
 
 from ac2.plugins.metadata import MetadataDisplay
 from ac2.metadata import enrich_metadata
@@ -29,17 +30,22 @@ from ac2.metadata import enrich_metadata
 
 class MetadataPostgres(MetadataDisplay):
 
-    def __init__(self):
+    def __init__(self, params: Dict[str, str]=None):
         logging.debug("initializing PostgreSQL scrobbler")
         super().__init__()
         self.starttimestamp = None
         self.conn = None
-        self.user = None
-        self.password = None
-        self.host = "127.0.0.1"
-        self.database = "hifiberry"
-        self.table = "scrobbles"
+        self.user = params.get("user", "hifiberry")
+        self.password = params.get("password", "hbos19")
+        self.host = params.get("host", "127.0.0.1")
+        self.database = params.get("database","hifiberry")
+        self.table = params.get("table","scrobbles")
         self.currentmetadata = None
+        logging.info("initialized postgres logger %s@%s:%s/%s",
+                     self.user, 
+                     self.host,
+                     self.database,
+                     self.table)
 
     def notify(self, metadata):
 

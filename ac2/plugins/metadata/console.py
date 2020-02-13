@@ -21,11 +21,11 @@ SOFTWARE.
 '''
 
 from ac2.plugins.metadata import MetadataDisplay
-
+from typing import Dict
 
 class MetadataConsole(MetadataDisplay):
 
-    def __init__(self):
+    def __init__(self, _params: Dict[str, str]=None):
         super().__init__(self)
         pass
 
