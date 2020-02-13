@@ -193,7 +193,7 @@ def trackInfo(artist, title, mbid, userparam):
         trackdata = None
         data = retrieve_url(url)
         if data is not None:
-            trackdata = json.loads(data.decode())
+            trackdata = json.loads(data.text)
 
         if mbid is not None and (trackdata is None or "error" in trackdata):
             logging.debug("track not found via mbid, retrying with name/title")
@@ -207,7 +207,7 @@ def artistInfo(artist_name):
     url = artist_template.format(quote(artist_name))
     data = retrieve_url(url)
     if data is not None:
-        return json.loads(data.decode())
+        return json.loads(data.text)
 
 
 def albumInfo(artist_name, album_name, albummbid=None):
@@ -221,7 +221,7 @@ def albumInfo(artist_name, album_name, albummbid=None):
     albumdata = None
     data = retrieve_url(url)
     if data is not None:
-        albumdata = json.loads(data.decode())
+        albumdata = json.loads(data.text)
 
     if albummbid is not None and (albumdata is None or "error" in albumdata):
         logging.debug("album not found via mbid, retrying with name/title")

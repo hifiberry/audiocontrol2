@@ -31,7 +31,7 @@ APIKEY="749a8fca4f2d3b0462b287820ad6ab06"
 def get_fanart_cover(artistmbid, albummbid, allow_artist_picture = False):
     url = "http://webservice.fanart.tv/v3/music/{}?api_key={}".format(artistmbid, APIKEY)
     try:
-        json_text = retrieve_url(url)
+        json_text = retrieve_url(url).text
         if json_text is None:
             logging.debug("artist does not exit on fanart.tv")
             return 

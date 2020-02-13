@@ -32,9 +32,10 @@ def hifiberry_cover(song_mbid, album_mbid, artist_mbid, player="unknown"):
 
     try:
         url = "{}/cover/{}/{}/{}/{}".format(BASE_URL, song_mbid, album_mbid, artist_mbid, player)
-        cover_data = retrieve_url(url)
+        cover_data = retrieve_url(url).text
+        
         if cover_data is not None and len(cover_data)>0:
-            (cover_url, width, height) = cover_data.decode('utf8').split("|")
+            (cover_url, width, height) = cover_data.split("|")
             if cover_url=="":
                 cover_url = None
                 
