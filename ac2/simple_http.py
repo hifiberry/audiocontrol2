@@ -63,7 +63,7 @@ def retrieve_url(url, headers = {}, verify=True, timeout=10):
             else:
                 logging.debug("negative cache hit: %s", url)
         except Exception as e:
-            logging.warning("HTTP exception while retrieving %s: %s", url, e)
+            logging.debug("HTTP exception while retrieving %s: %s", url, e)
             negativeCache[url] = True
             
             
@@ -78,6 +78,6 @@ def post_data(url, data, headers = {}, verify=True, timeout=10):
                             verify = verify,
                             timeout = timeout)
     except Exception as e:
-        logging.warning("HTTP exception while posting %s: %s", url, e)
+        logging.debug("HTTP exception while posting %s: %s", url, e)
         
     return res
