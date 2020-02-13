@@ -35,7 +35,7 @@ class Test(unittest.TestCase):
     def test_retrieve(self):
         res1 = retrieve_url(GOOGLE)
         self.assertIsNotNone(res1)
-        self.assertTrue("html" in res1)
+        self.assertTrue("html" in res1.text)
         res2 = retrieve_url(GOOGLE)
         self.assertEqual(res1, res2)
         res = retrieve_url(NOT_EXISTING)

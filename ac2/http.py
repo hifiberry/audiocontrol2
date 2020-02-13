@@ -54,9 +54,9 @@ def retrieve_url(url, headers = {}, verify=True):
         try:
             if negativeCache.get(url) is None:
                 headers['User-agent'] = 'audiocontrol/{}/{}'.format(release(), host_uuid())
-                res = requests.get(url, verify=verify)
-                cache[url] = res.text
-                return res.text
+                res = requests.get(url, headers=headers, verify=verify)
+                cache[url] = res
+                return res
             else:
                 logging.debug("negative cache hit: %s", url)
         except Exception as e:
@@ -73,4 +73,4 @@ def post_data(url, data, headers = {}, verify=True):
     except Exception as e:
         logging.warning("HTTP exception while posting %s: %s", url, e)
         
-    return res.text
+    return res
