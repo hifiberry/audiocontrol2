@@ -3,6 +3,8 @@
 [LaMetric Time](https://store.lametric.com/?rfsn=3238201.c5edf5) is a "connected clock".  We like the pixely look of it. 
 While it's not the ideal device to display long text, it's still fun to use it with audiocontrol and 
 [HiFiBerryOS](https://hifiberry.com/os).
+We wouldn't recommend it as a music player (you have a HiFiBerry for this that will sound much better!), but as we like
+it as a display.
 
 The extension is quite simple (just have a look at the 
 [source](https://github.com/hifiberry/audiocontrol2/blob/master/ac2/plugins/metadata/lametric.py)).
