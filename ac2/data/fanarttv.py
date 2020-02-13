@@ -23,7 +23,7 @@ import logging
 import json
 
 # Use caching
-from ac2.http import retrieve_url
+from ac2.simple_http import retrieve_url
 from ac2.data.coverarthandler import good_enough, best_picture_url
 
 APIKEY="749a8fca4f2d3b0462b287820ad6ab06"

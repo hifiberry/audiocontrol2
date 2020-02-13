@@ -25,7 +25,7 @@ import json
 from urllib.parse import quote
 
 from ac2.data.coverarthandler import best_picture_url
-from ac2.http import retrieve_url
+from ac2.simple_http import retrieve_url
 
 lastfmuser = None
 

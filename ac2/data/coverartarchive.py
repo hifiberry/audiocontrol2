@@ -23,7 +23,7 @@ SOFTWARE.
 import json
 import logging
 
-from ac2.http import retrieve_url
+from ac2.simple_http import retrieve_url
 from ac2.data.coverarthandler import good_enough, best_picture_url
 
 
@@ -48,7 +48,7 @@ def coverdata(mbid):
     url = "http://coverartarchive.org/release/{}/".format(mbid)
     data = retrieve_url(url)
     if data is not None:
-        return json.loads(data)
+        return json.loads(data.text)
 
 
 def enrich_metadata(metadata):

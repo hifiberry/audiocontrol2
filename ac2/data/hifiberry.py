@@ -23,7 +23,7 @@ SOFTWARE.
 import logging
 
 from ac2.data.coverarthandler import best_picture_url, best_picture_size
-from ac2.http import retrieve_url, post_data
+from ac2.simple_http import retrieve_url, post_data
 
 BASE_URL="https://musicdb.hifiberry.com"
 
