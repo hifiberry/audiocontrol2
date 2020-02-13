@@ -22,7 +22,7 @@ SOFTWARE.
 
 import unittest
 
-from ac2.http import retrieve_url, post_data, is_cached, is_negative_cached, clear_cache
+from ac2.simple_http import retrieve_url, post_data, is_cached, is_negative_cached, clear_cache
 
 GOOGLE = "https://google.com"
 NOT_EXISTING = "http://does-not-exist.nowhere.none"

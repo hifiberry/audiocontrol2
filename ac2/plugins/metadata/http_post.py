@@ -24,7 +24,6 @@ from ac2.plugins.metadata import MetadataDisplay
 
 import requests
 import logging
-from ac2.metadata import enrich_metadata
 import os
 import urllib.parse
 
