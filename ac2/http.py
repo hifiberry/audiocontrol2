@@ -1,5 +1,5 @@
 '''
-Copyright (c) 2018 Modul 9/HiFiBerry
+Copyright (c) 2020 Modul 9/HiFiBerry
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,6 @@ SOFTWARE.
 '''
 
 import logging
-from urllib.request import Request,urlopen
-from urllib.parse import urlencode
 from expiringdict import ExpiringDict
 
 import requests
@@ -35,7 +33,19 @@ negativeCache = ExpiringDict(max_len=100,
                              max_age_seconds=600)
 
 
-def retrieve_url(url):
+def clear_cache():
+    cache.clear()
+    negativeCache.clear()
+
+def is_cached(url):
+    return url in cache
+
+
+def is_negative_cached(url):
+    return url in negativeCache
+
+
+def retrieve_url(url, headers = {}, verify=True):
 
     if url in cache:
         logging.debug("retrieved from cache: %s", url)
@@ -43,13 +53,10 @@ def retrieve_url(url):
     else:
         try:
             if negativeCache.get(url) is None:
-                req = Request(url)
-                req.add_header('User-agent', 'audiocontrol/{}/{}'.format(release(), host_uuid()))
-                with urlopen(req) as connection:
-                    res = connection.read()
-                    logging.debug("retrieved live version: %s", url)
-                cache[url] = res
-                return res
+                headers['User-agent'] = 'audiocontrol/{}/{}'.format(release(), host_uuid())
+                res = requests.get(url, verify=verify)
+                cache[url] = res.text
+                return res.text
             else:
                 logging.debug("negative cache hit: %s", url)
         except Exception as e:
@@ -57,13 +64,13 @@ def retrieve_url(url):
             negativeCache[url] = True
             
             
-def post_data(url, data):
+def post_data(url, data, headers = {}, verify=True):
     
     res = None
     try:
-        headers = {'User-agent': 'audiocontrol/{}/{}'.format(release(), host_uuid())}
-        requests.post(url, data = data, headers=headers)
+        headers['User-agent'] = 'audiocontrol/{}/{}'.format(release(), host_uuid())
+        res = requests.post(url, data = data, headers=headers, verify = verify)
     except Exception as e:
         logging.warning("HTTP exception while posting %s: %s", url, e)
         
-    return res
+    return res.text
