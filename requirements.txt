@@ -1,3 +1,4 @@
 pyalsaaudio
 musicbrainzngs
 expiringdict
+netifaces
