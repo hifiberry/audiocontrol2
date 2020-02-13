@@ -45,7 +45,7 @@ def is_negative_cached(url):
     return url in negativeCache
 
 
-def retrieve_url(url, headers = {}, verify=True):
+def retrieve_url(url, headers = {}, verify=True, timeout=10):
 
     if url in cache:
         logging.debug("retrieved from cache: %s", url)
@@ -54,7 +54,10 @@ def retrieve_url(url, headers = {}, verify=True):
         try:
             if negativeCache.get(url) is None:
                 headers['User-agent'] = 'audiocontrol/{}/{}'.format(release(), host_uuid())
-                res = requests.get(url, headers=headers, verify=verify)
+                res = requests.get(url, 
+                                   headers=headers, 
+                                   verify=verify,
+                                   timeout=timeout)
                 cache[url] = res
                 return res
             else:
@@ -64,12 +67,16 @@ def retrieve_url(url, headers = {}, verify=True):
             negativeCache[url] = True
             
             
-def post_data(url, data, headers = {}, verify=True):
+def post_data(url, data, headers = {}, verify=True, timeout=10):
     
     res = None
     try:
         headers['User-agent'] = 'audiocontrol/{}/{}'.format(release(), host_uuid())
-        res = requests.post(url, data = data, headers=headers, verify = verify)
+        res = requests.post(url, 
+                            data = data, 
+                            headers=headers, 
+                            verify = verify,
+                            timeout = timeout)
     except Exception as e:
         logging.warning("HTTP exception while posting %s: %s", url, e)
         

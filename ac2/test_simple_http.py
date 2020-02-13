@@ -21,6 +21,7 @@ SOFTWARE.
 '''
 
 import unittest
+from datetime import datetime
 
 from ac2.simple_http import retrieve_url, post_data, is_cached, is_negative_cached, clear_cache
 
@@ -28,6 +29,7 @@ GOOGLE = "https://google.com"
 NOT_EXISTING = "http://does-not-exist.nowhere.none"
 BAD_CERT = "https://wrong.host.badssl.com"
 POST = "https://webhook.site/d6c0f2b6-c361-4952-bab5-d95bba6a0fc3"
+TIMEOUT = "http://2.2.2.2"
 
 class Test(unittest.TestCase):
 
@@ -61,6 +63,19 @@ class Test(unittest.TestCase):
         self.assertFalse(is_cached(NOT_EXISTING))
         self.assertTrue(is_negative_cached(NOT_EXISTING))
         
+    def test_timeout(self):
+        clear_cache()
+        t1 = datetime.now()
+        self.assertIsNone(retrieve_url(TIMEOUT, timeout=5))
+        t2 = datetime.now()
+        # This should take about 5 seconds
+        self.assertLess((t2-t1).total_seconds(),7)
+        self.assertLess(4,(t2-t1).total_seconds())
+        clear_cache()
+        t1 = datetime.now()
+        self.assertIsNone(retrieve_url(TIMEOUT, timeout=1))
+        t2 = datetime.now()
+        self.assertLess((t2-t1).total_seconds(),3)
 
 
 if __name__ == "__main__":
