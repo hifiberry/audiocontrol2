@@ -64,11 +64,13 @@ class LaMetricPush(MetadataDisplay):
                 "frames": [
                     {
                         "text": metadata.artist,
-                        "icon": "a22046"
+                        "icon": "a22046",
+                        "duration": 5000,
                     },
                     {
                         "text":metadata.title,
-                        "icon": "a22046"
+                        "icon": "a22046",
+                        "duration" : 5000,
                     }
                 ]
             }
