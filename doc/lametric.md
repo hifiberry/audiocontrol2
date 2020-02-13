@@ -27,6 +27,12 @@ to you /etc/audiocontrol2.conf file. If you're using HiFiBerryOS, this line shou
 
 Open the LaMetric app on your smartphone, select your device and press the "+" button to add an app. 
 This will open the LaMetric app store. Just search for "HiFiBerryOS" and install the app.
+
+![lm1](lm1.PNG)
+![lm2](lm2.PNG)
+![lm3](lm3.PNG)
+![lm4](lm4.PNG)
+
 That's it. Audiocontrol will now send artist and song name of the song currently playing to your 
 LaMetric devices in your local network.
 
