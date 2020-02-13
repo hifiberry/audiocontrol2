@@ -235,6 +235,20 @@ def parse_config(debugmode=False):
                 logging.error("Exception during controller %s initialization",
                               classname)
                 logging.exception(e)
+                
+    #  Additional metadata modules
+    for section in config.sections():
+        if section.startswith("metadata:"):
+            [_,classname] = section.split(":",1)
+            try:
+                params = config[section]
+                mddisplay = create_object(classname, params)
+                mpris.register_metadata_display(mddisplay)
+                logging.info("registered metadata display %s", controller)
+            except Exception as e:
+                logging.error("Exception during controller %s initialization",
+                              classname)
+                logging.exception(e)
 
     # Metadata push to GUI
     if "metadata_post" in config.sections():
@@ -278,45 +292,6 @@ def parse_config(debugmode=False):
         except Exception as e:
             logging.error("can't activate volume_post: %s", e)
 
-    # Postgresql scrobbler
-    if "postgres" in config.sections():
-        try:
-            from ac2.plugins.metadata.postgresql import MetadataPostgres
-            postgres_scrobbler = MetadataPostgres()
-
-            postgres_scrobbler.user = config.get("postgres",
-                                                 "user",
-                                                 fallback="hifiberry")
-            postgres_scrobbler.password = config.get("postgres",
-                                                     "password",
-                                                     fallback="hbos2019")
-
-            mpris.register_metadata_display(postgres_scrobbler)
-            logging.info("enabled logging to Postgres")
-
-        except Exception as e:
-            logging.error("can't activate postgres: %s", e)
-
-    # Plugins
-    if "plugins" in config.sections():
-        plugin_dir = config.get("plugins",
-                                "directory",
-                                fallback=None)
-        if plugin_dir is not None:
-            sys.path.append(plugin_dir)
-
-        for metadata_plugin in config.get("plugins",
-                                          "metadata",
-                                          fallback="").split(","):
-            try:
-                metadata_plugin = create_object(metadata_plugin)
-                mpris.register_metadata_display(metadata_plugin)
-                logging.info("registered metadata plugin %s",
-                             metadata_plugin)
-            except Exception as e:
-                logging.error("can't load metadata plugin %s (%s)",
-                              metadata_plugin,
-                              e)
 
     # Other settings
     if "privacy" in config.sections():
