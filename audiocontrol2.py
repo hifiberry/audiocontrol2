@@ -253,7 +253,7 @@ def parse_config(debugmode=False):
     # Metadata push to GUI
     if "metadata_post" in config.sections():
         try:
-            from ac2.plugins.metadata.http import MetadataHTTPRequest
+            from ac2.plugins.metadata.http_post import MetadataHTTPRequest
             url = config.get("metadata_post",
                              "url",
                              fallback=None)
