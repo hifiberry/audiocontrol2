@@ -297,6 +297,8 @@ class MPRISController():
             res = self.mpris_command(playerName, command)
         else:
             res = self.mpris_command(MPRIS_PREFIX + playerName, command)
+            
+        logging.info("sent %s to %s", command, playerName)
 
         return res
 
@@ -527,21 +529,24 @@ class MPRISController():
     # ##
 
     def previous(self):
-            self.send_command(MPRIS_PREV)
+        self.send_command(MPRIS_PREV)
 
     def next(self):
-            self.send_command(MPRIS_NEXT)
+        self.send_command(MPRIS_NEXT)
 
     def playpause(self, pause=None):
-            if pause is None:
-                if self.playing:
-                    self.send_command(MPRIS_PAUSE)
-                else:
-                    self.send_command(MPRIS_PLAY)
-            elif pause:
-                self.send_command(MPRIS_PAUSE)
+        command = None
+        if pause is None:
+            if self.playing:
+                command=MPRIS_PAUSE
             else:
-                self.send_command(MPRIS_PLAY)
+                command=MPRIS_PLAY
+        elif pause:
+            command=MPRIS_PAUSE
+        else:
+            command=MPRIS_PLAY
+                
+        self.send_command(command)
 
     def stop(self):
             self.send_command(MPRIS_STOP)
