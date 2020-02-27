@@ -20,6 +20,8 @@ SOFTWARE.
 import logging
 from typing import Dict
 
+from usagecollector.client import report_usage
+
 from ac2.plugins.control.controller import Controller
 
 
@@ -73,9 +75,11 @@ class Keyboard(Controller):
                 return
 
             try:
+                command_run = False
                 if command == "volume_up":
                     if self.volumecontrol is not None:
                         self.volumecontrol.change_volume_percent(5)
+                        command_run =True
                     else:
                         logging.info("ignoring %s, no volume control",
                                      command)
@@ -83,6 +87,7 @@ class Keyboard(Controller):
                 elif command == "volume_down":
                     if self.volumecontrol is not None:
                         self.volumecontrol.change_volume_percent(-5)
+                        command_run =True
                     else:
                         logging.info("ignoring %s, no volume control",
                                      command)
@@ -90,6 +95,7 @@ class Keyboard(Controller):
                 elif command == "previous":
                     if self.playercontrol is not None:
                         self.playercontrol.previous()
+                        command_run =True
                     else:
                         logging.info("ignoring %s, no playback control",
                                      command)
@@ -97,6 +103,7 @@ class Keyboard(Controller):
                 elif command == "next":
                     if self.playercontrol is not None:
                         self.playercontrol.next()
+                        command_run =True
                     else:
                         logging.info("ignoring %s, no playback control",
                                      command)
@@ -104,11 +111,15 @@ class Keyboard(Controller):
                 elif command == "playpause":
                     if self.playercontrol is not None:
                         self.playercontrol.playpause()
+                        command_run =True
                     else:
                         logging.info("ignoring %s, no playback control",
                                      command)
 
-                logging.error("processed %s", command)
+                if command_run:
+                    report_usage("audiocontrol_keyboard_key", 1)
+
+                logging.debug("processed %s", command)
 
             except Exception as e:
                 logging.warning("problem handling %s (%s)", command, e)

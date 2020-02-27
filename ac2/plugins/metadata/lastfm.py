@@ -25,6 +25,8 @@ import logging
 import datetime
 from threading import Thread
 
+from usagecollector.client import report_usage
+
 from ac2.plugins.metadata import MetadataDisplay
 import pylast
 
@@ -106,9 +108,11 @@ class LastFMScrobbler(MetadataDisplay):
             if love:
                 logging.info("sending love to Last.FM")
                 track.love()
+                report_usage("audiocontrol_lastfm_love", 1)
             else:
                 logging.info("sending unlove to Last.FM")
                 track.unlove()
+                report_usage("audiocontrol_lastfm_love", 1)
         except Exception as e:
             logging.warning("got exception %s while love/unlove", e)
             return False
@@ -144,12 +148,10 @@ class LastFMScrobbler(MetadataDisplay):
         if (lastsong_md is not None) and not(lastsong_md.is_unknown()):
             sender = ScrobbleSender(self.get_network(), lastsong_md)
             sender.start()
+            report_usage("audiocontrol_lastfm_scrobble", 1)
         else:
             logging.info("no track data, not scrobbling %s", lastsong_md)
             
-        
-    
-        
 
     def __str__(self):
         return "lastfmscrobbler@{}".format(self.networkname)

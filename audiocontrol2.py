@@ -35,6 +35,8 @@ import sys
 import threading
 from _collections import OrderedDict
 
+from usagecollector.client import report_activate
+
 from ac2.mpris import MPRISController
 import ac2.data.lastfm as lastfmdata
 
@@ -126,6 +128,7 @@ def parse_config(debugmode=False):
         server.add_updater(mpris)
         server.start()
         watchdog.add_monitored_thread(server, "webserver")
+        report_activate("audiocontrol_webserver")
         logging.info("started web server on port %s", port)
     else:
         logging.error("web server disabled")
@@ -173,6 +176,8 @@ def parse_config(debugmode=False):
                     if server is not None:
                         server.add_lover(lastfmscrobbler)
                         Metadata.loveSupportedDefault = True
+                        
+                    report_activate("audiocontrol_lastfm_scrobble")
 
                 except Exception as e:
                     logging.error("error setting up lastfm module: %s", e)
@@ -214,6 +219,8 @@ def parse_config(debugmode=False):
             watchdog.add_monitored_thread(volume_control, "volume control")
 
         mpris.set_volume_control(volume_control)
+        
+        report_activate("audiocontrol_volume")
 
     if volume_control is None:
         logging.info("volume control not configured, "
@@ -231,6 +238,7 @@ def parse_config(debugmode=False):
                 controller.set_volume_control(volume_control)
                 controller.start()
                 logging.info("started controller %s", controller)
+                report_activate("audiocontrol_controller_"+classname)
             except Exception as e:
                 logging.error("Exception during controller %s initialization",
                               classname)
@@ -245,6 +253,7 @@ def parse_config(debugmode=False):
                 mddisplay = create_object(classname, params)
                 mpris.register_metadata_display(mddisplay)
                 logging.info("registered metadata display %s", controller)
+                report_activate("audiocontrol_metadata_"+classname)
             except Exception as e:
                 logging.error("Exception during controller %s initialization",
                               classname)

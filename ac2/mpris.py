@@ -32,6 +32,7 @@ from ac2.metadata import Metadata, enrich_metadata_bg
 # from ac2.controller import PlayerController
 from ac2 import watchdog
 from ac2.helpers import array_to_string
+from usagecollector.client import report_usage
 
 PLAYING = "playing"
 PAUSED = "pauses"
@@ -106,10 +107,11 @@ class MPRISController():
 
         for md in self.metadata_displays:
             try:
-                logging.debug("metadata_notify: %s %s", md, metadata)
+                logging.error("metadata_notify: %s %s", md, metadata)
                 md.notify_async(copy.copy(metadata))
             except Exception as e:
                 logging.warn("could not notify %s: %s", md, e)
+                logging.exception(e)
 
         self.metadata = metadata
 
@@ -352,6 +354,7 @@ class MPRISController():
         squeezelite_active = 0
 
         previous_state = ""
+        ts = datetime.datetime.now()
 
         while not(finished):
             new_player_started = None
@@ -359,6 +362,9 @@ class MPRISController():
             playing = False
             new_song = False
             state = "unknown"
+            last_ts = ts
+            ts = datetime.datetime.now()
+            duration = (ts-last_ts).total_seconds()
 
             for p in self.retrievePlayers():
 
@@ -402,6 +408,8 @@ class MPRISController():
 
                     if self.playername(p) == LMS_NAME:
                         squeezelite_active = 2
+                        
+                    report_usage("audiocontrol_playing_{}".format(self.playername(p)),duration)
 
                     md = self.retrieveMeta(p)
 #                    if md.is_unknown():

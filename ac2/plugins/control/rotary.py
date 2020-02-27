@@ -20,6 +20,8 @@ SOFTWARE.
 import logging
 from typing import Dict
 
+from usagecollector.client import report_usage
+
 from ac2.plugins.control.controller import Controller
 
 from pyky040 import pyky040
@@ -79,18 +81,21 @@ class Rotary(Controller):
     def increase(self,val):
         if self.volumecontrol is not None:
             self.volumecontrol.change_volume_percent(self.step)
+            report_usage("audiocontrol_rotary_volume", 1)
         else:
             logging.info("no volume control, ignoring rotary control")
 
     def decrease(self,val):
         if self.volumecontrol is not None:
             self.volumecontrol.change_volume_percent(-self.step)
+            report_usage("audiocontrol_rotary_volume", 1)
         else:
             logging.info("no volume control, ignoring rotary control")
 
     def button(self):
         if self.playercontrol is not None:
             self.playercontrol.playpause()
+            report_usage("audiocontrol_rotary_button", 1)
         else:
             logging.info("no player control, ignoring press")
     

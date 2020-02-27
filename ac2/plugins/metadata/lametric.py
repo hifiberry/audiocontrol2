@@ -27,6 +27,8 @@ from typing import Dict
 from urllib.parse import urlparse
 from threading import Thread
 
+from usagecollector.client import report_usage
+
 from ac2.plugins.metadata import MetadataDisplay
 from ac2.simple_http import post_data, retrieve_url
 
@@ -57,6 +59,7 @@ class LaMetricPush(MetadataDisplay):
             if len(ip)>0:
                 url = "https://{}:4343/api/v1/dev/widget/update/com.lametric.b647e225d0b81484c19ff25030915e58".format(ip)
                 self.urls.append(url)
+                report_usage("audiocontrol_lametric_discovered", 1)
         
 
     def notify(self, metadata):
@@ -83,6 +86,8 @@ class LaMetricPush(MetadataDisplay):
         
         for url in self.urls:
             logging.info("sending update to LaMetric at %s",url)
+            report_usage("audiocontrol_lametric_metadata", 1)
+
             post_data(url, json.dumps(data), headers=headers, verify=False)
         
 

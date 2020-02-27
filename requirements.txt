@@ -2,3 +2,4 @@ pyalsaaudio
 musicbrainzngs
 expiringdict
 netifaces
+usagecollector
