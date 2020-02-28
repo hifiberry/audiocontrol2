@@ -30,6 +30,8 @@ import ac2.data.fanarttv as fanarttv
 import ac2.data.hifiberry as hifiberrydb
 import ac2.data.coverartarchive as coverartarchive
 from ac2.data.identities import host_uuid
+from ac2.data.guess import guess_order, guess_stream_order, \
+    ORDER_ARTIST_TITLE, ORDER_TITLE_ARTIST, ORDER_ARTIST_TITLE
 
 # Use external metadata?
 external_metadata = True
@@ -103,7 +105,7 @@ class Metadata:
 
         return not(self.__eq__(other))
 
-    def fixProblems(self):
+    def fix_problems(self, allow_guess=True):
         """
         Cleanup metadata for known problems
         """
@@ -111,16 +113,34 @@ class Metadata:
         # MPD web radio stations use different schemes to encode
         # artist and title into a title string
         # we try to guess here what's used
-        if (self.playerName == "mpd") and \
-                (self.artist == "unknown artist"):
+        if (self.artist_unknown()):
             if (" - " in self.title):
-                [artist, title] = self.title.split(" - ", 1)
-                self.artist = artist
-                self.title = title
+                [data1, data2] = self.title.split(" - ", 1)
             elif (", " in self.title):
-                [title, artist] = self.title.split(", ", 1)
-                self.artist = artist
-                self.title = title
+                [data1, data2] = self.title.split(", ", 1)
+
+            data1=data1.strip()
+            data2=data2.strip()
+            
+            if len(data2) > 0:
+            
+                if allow_guess == False:
+                    order = ORDER_ARTIST_TITLE
+                else:
+                    if self.streamUrl is not None and self.streamUrl.startswith("http"):
+                        order = guess_stream_order(self.streamUrl, data1, data2)
+                    else:
+                        order = guess_order(data1, data2)
+                        
+                if order == ORDER_TITLE_ARTIST:
+                    self.title = data1
+                    self.artist = data2
+                else:
+                    self.artist = data1
+                    self.title = data2
+
+
+
 
     def fill_undefined(self, metadata):
         for attrib in metadata.__dict__:
