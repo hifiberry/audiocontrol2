@@ -2,4 +2,5 @@ pyalsaaudio
 musicbrainzngs
 expiringdict
 netifaces
-git+git://github.com/path/to/package-two@master
+git+https://github.com/hifiberry/usagecollector@master
+python-Levenshtein
