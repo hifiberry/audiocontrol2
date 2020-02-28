@@ -113,7 +113,7 @@ class Metadata:
         # MPD web radio stations use different schemes to encode
         # artist and title into a title string
         # we try to guess here what's used
-        if (self.artist_unknown()):
+        if (self.artist_unknown() and self.title is not None):
             if (" - " in self.title):
                 [data1, data2] = self.title.split(" - ", 1)
             elif (", " in self.title):
