@@ -118,6 +118,9 @@ class Metadata:
                 [data1, data2] = self.title.split(" - ", 1)
             elif (", " in self.title):
                 [data1, data2] = self.title.split(", ", 1)
+            else:
+                data1=""
+                data2=""
 
             data1=data1.strip()
             data2=data2.strip()
