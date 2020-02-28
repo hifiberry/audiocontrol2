@@ -224,7 +224,7 @@ class MPRISController():
 
             md.playerName = self.playername(name)
 
-            md.fixProblems()
+            md.fix_problems()
 
             return md
 
