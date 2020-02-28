@@ -160,6 +160,21 @@ class MetaDataTest(unittest.TestCase):
         self.assertIn("albummbid",self.updates)
         self.assertEqual(self.song_id, song_id)
         
+        
+    def test_guess(self):
+        md=Metadata("","Bruce Springsteen - The River")
+        md.fix_problems(allow_guess=True)
+        
+        self.assertEqual(md.artist,"Bruce Springsteen")
+        self.assertEqual(md.title,"The River")
+        
+        md=Metadata("","The River - Bruce Springsteen")
+        md.fix_problems(allow_guess=True)
+        
+        self.assertEqual(md.artist,"Bruce Springsteen")
+        self.assertEqual(md.title,"The River")
+        
+        
     def update_metadata_attributes(self, updates, song_id):
         self.updates = updates
         self.song_id = song_id
