@@ -107,7 +107,7 @@ class MPRISController():
 
         for md in self.metadata_displays:
             try:
-                logging.error("metadata_notify: %s %s", md, metadata)
+                logging.debug("metadata_notify: %s %s", md, metadata)
                 md.notify_async(copy.copy(metadata))
             except Exception as e:
                 logging.warn("could not notify %s: %s", md, e)
