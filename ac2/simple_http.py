@@ -45,7 +45,7 @@ def is_negative_cached(url):
     return url in negativeCache
 
 
-def retrieve_url(url, headers = {}, verify=True, timeout=10):
+def retrieve_url(url, headers = {}, params= {}, verify=True, timeout=10):
 
     if url in cache:
         logging.debug("retrieved from cache: %s", url)
@@ -57,6 +57,7 @@ def retrieve_url(url, headers = {}, verify=True, timeout=10):
                 res = requests.get(url, 
                                    headers=headers, 
                                    verify=verify,
+                                   params=params,
                                    timeout=timeout)
                 cache[url] = res
                 return res
