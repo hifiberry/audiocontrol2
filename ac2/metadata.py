@@ -24,6 +24,8 @@ import copy
 import threading
 import logging
 
+from expiringdict import ExpiringDict
+
 import ac2.data.musicbrainz as musicbrainz
 import ac2.data.lastfm as lastfmdata
 import ac2.data.fanarttv as fanarttv
@@ -36,6 +38,7 @@ from ac2.data.guess import guess_order, guess_stream_order, \
 # Use external metadata?
 external_metadata = True
 
+order_cache = ExpiringDict(max_len=10, max_age_seconds=3600)
 
 class Metadata:
     """
@@ -105,15 +108,17 @@ class Metadata:
 
         return not(self.__eq__(other))
 
-    def fix_problems(self, allow_guess=True):
+    def fix_problems(self, guess=True):
         """
         Cleanup metadata for known problems
         """
-
+        
         # MPD web radio stations use different schemes to encode
         # artist and title into a title string
         # we try to guess here what's used
-        if (self.artist_unknown() and self.title is not None):
+        if (self.artist_unknown() and 
+            self.title is not None):
+            
             if (" - " in self.title):
                 [data1, data2] = self.title.split(" - ", 1)
             elif (", " in self.title):
@@ -126,8 +131,12 @@ class Metadata:
             data2=data2.strip()
             
             if len(data2) > 0:
+                
+                cached_order = order_cache.get(data1+"/"+data2,-1)
             
-                if allow_guess == False:
+                if cached_order>=0:
+                    order = cached_order
+                elif not(guess) or not(external_metadata):
                     order = ORDER_ARTIST_TITLE
                 else:
                     if self.streamUrl is not None and self.streamUrl.startswith("http"):
@@ -142,6 +151,7 @@ class Metadata:
                     self.artist = data1
                     self.title = data2
 
+                order_cache[data1+"/"+data2] = order
 
 
 
@@ -159,7 +169,6 @@ class Metadata:
         return copy.copy(self)
 
     def is_unknown(self):
-    
         if self.artist_unknown() or self.title_unknown():
             return True
 

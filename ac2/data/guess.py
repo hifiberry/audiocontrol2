@@ -20,48 +20,90 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
+import logging
+
 from ac2.data.musicbrainz import track_data
+from ac2.data.hifiberry import cloud_url
+from ac2.simple_http import retrieve_url, post_data
 
 ORDER_UNKNOWN = 0
 ORDER_TITLE_ARTIST = 1
 ORDER_ARTIST_TITLE = 2
 
+verbose = {
+    ORDER_UNKNOWN:      "unknown",
+    ORDER_TITLE_ARTIST: "title/artist",
+    ORDER_ARTIST_TITLE: "artist/title",
+    }
 
 stream_stats = {}
 
-def guess_stream_order(stream, field1, field2):
+CACHE_PATH = "radio/stream-order"
+
+def guess_stream_order(stream, field1, field2, use_cloud=True):
     MIN_STAT_RATIO = 0.05
-    MIN_STATS=5
+    MIN_STATS=10
     
-    stats = stream_stats.get(stream,{"ta": 0, "at": 0, "order": ORDER_UNKNOWN})
+    if stream.startswith("http"):
+        caching_supported = True
+    else:
+        caching_supported = False
+        logging.warn("not a web radio stream, won't use caching")
     
-    if stats["order"] != ORDER_UNKNOWN:
-        return stats["order"]
+    stats = stream_stats.get(stream,{"ta": 0, "at": 0, "order": ORDER_UNKNOWN, "cloud": ORDER_UNKNOWN})
     
     at = stats["at"]
     ta = stats["ta"]
+    cloud = stats["cloud"]
     
-    order = guess_order(field1, field2)
+    if stats["order"] != ORDER_UNKNOWN:
+        return stats["order"]
+    if stats["cloud"] != ORDER_UNKNOWN:
+        return stats["cloud"]
+    
+    # Check hifiberry cloud if order is known for this stream
+    if caching_supported:
+        try:
+            cacheinfo = retrieve_url(cloud_url(CACHE_PATH), 
+                                     params = { 'stream' : stream })
+            cloud = int(cacheinfo.content)
+        except Exception as e:
+            logging.exception(e)
+        
+    if cloud in [ ORDER_ARTIST_TITLE, ORDER_TITLE_ARTIST]:
+        order = cloud
+        stream_order = cloud
+    else:
+        stream_order = ORDER_UNKNOWN
+        order = guess_order(field1, field2)
     
     if order == ORDER_ARTIST_TITLE:
         at += 1
     elif order == ORDER_TITLE_ARTIST:
         ta += 1
         
-    if at+ta > MIN_STATS:
+    logging.debug("at/ta: %s/%s",at,ta)
+        
+    if stream_order == ORDER_UNKNOWN and at+ta > MIN_STATS:
         if float(at)*MIN_STAT_RATIO > ta:
             stream_order = ORDER_ARTIST_TITLE
         elif float(ta)*MIN_STAT_RATIO > at:
             stream_order = ORDER_TITLE_ARTIST
         else:
             stream_order = ORDER_UNKNOWN
+        
+        logging.info("guess stream %s is using %s encoding (%s/%s)",
+                     stream, verbose[stream_order], at, ta)
+        
+        if use_cloud and caching_supported:
+            post_data(cloud_url(CACHE_PATH), 
+                      { "stream": stream,
+                       "order": stream_order})
     else:
         stream_order = ORDER_UNKNOWN
             
-    stream_stats[stream]={"order": stream_order, "ta": ta, "at": at}
+    stream_stats[stream]={"order": stream_order, "ta": ta, "at": at, "cloud": cloud}
     return order
-    
-        
     
 
 def guess_order(field1, field2):
@@ -93,7 +135,6 @@ def guess_order(field1, field2):
         return ORDER_TITLE_ARTIST
     else:
         return ORDER_UNKNOWN
-    
     
 def _title(data):
     try:

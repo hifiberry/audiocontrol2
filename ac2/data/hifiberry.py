@@ -27,6 +27,9 @@ from ac2.simple_http import retrieve_url, post_data
 
 BASE_URL="https://musicdb.hifiberry.com"
 
+def cloud_url(path):
+    return BASE_URL + "/"+path
+
 def hifiberry_cover(song_mbid, album_mbid, artist_mbid, player="unknown"):
     logging.debug("trying to find coverart for %s from hifiberry", song_mbid)
 
@@ -50,7 +53,6 @@ def hifiberry_cover(song_mbid, album_mbid, artist_mbid, player="unknown"):
     except Exception as e:
         logging.warn("can't load cover for %s: %s", song_mbid, e)
         logging.exception(e)
-    
     
 
 def send_update(metadata):

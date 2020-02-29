@@ -163,16 +163,22 @@ class MetaDataTest(unittest.TestCase):
         
     def test_guess(self):
         md=Metadata("","Bruce Springsteen - The River")
-        md.fix_problems(allow_guess=True)
+        md.fix_problems(guess=True)
         
         self.assertEqual(md.artist,"Bruce Springsteen")
         self.assertEqual(md.title,"The River")
         
         md=Metadata("","The River - Bruce Springsteen")
-        md.fix_problems(allow_guess=True)
+        md.fix_problems(guess=True)
         
         self.assertEqual(md.artist,"Bruce Springsteen")
         self.assertEqual(md.title,"The River")
+        
+        md=Metadata("","Michael Kiwanuka - You Ain't The Problem")
+        md.fix_problems(guess=True)
+        
+        self.assertEqual(md.artist,"Michael Kiwanuka")
+        self.assertEqual(md.title,"You Ain't The Problem")
         
         
     def update_metadata_attributes(self, updates, song_id):
