@@ -95,7 +95,7 @@ def guess_stream_order(stream, field1, field2, use_cloud=True):
         logging.info("guess stream %s is using %s encoding (%s/%s)",
                      stream, verbose[stream_order], at, ta)
         
-        if use_cloud and caching_supported:
+        if use_cloud and caching_supported and stream_order != ORDER_UNKNOWN:
             post_data(cloud_url(CACHE_PATH), 
                       { "stream": stream,
                        "order": stream_order})
