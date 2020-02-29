@@ -279,8 +279,7 @@ class AudioControlWebserver(MetadataDisplay):
         for u in self.updaters:
             try:
                 logging.debug("sending update %s to %s", u, updates)
-                u.update_metadata_attributes(updates)
-                logging.debug("sent update %s to %s", u, updates)
+                u.update_metadata_attributes(updates, song_id)
             except Exception as e:
                 logging.warn("couldn't send update to %s: %s", u, e)
 
