@@ -41,7 +41,7 @@ stream_stats = {}
 CACHE_PATH = "radio/stream-order"
 
 def guess_stream_order(stream, field1, field2, use_cloud=True):
-    MIN_STAT_RATIO = 0.05
+    MIN_STAT_RATIO = 0.1
     MIN_STATS=10
     
     if stream.startswith("http"):
