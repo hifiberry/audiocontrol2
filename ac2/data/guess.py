@@ -66,7 +66,10 @@ def guess_stream_order(stream, field1, field2, use_cloud=True):
         try:
             cacheinfo = retrieve_url(cloud_url(CACHE_PATH), 
                                      params = { 'stream' : stream })
-            cloud = int(cacheinfo.content)
+            if cacheinfo is not None:
+                cloud = int(cacheinfo.content)
+            else:
+                cloud = ORDER_UNKNOWN
         except Exception as e:
             logging.exception(e)
         
