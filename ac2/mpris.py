@@ -412,12 +412,7 @@ class MPRISController():
                     report_usage("audiocontrol_playing_{}".format(self.playername(p)),duration)
 
                     md = self.retrieveMeta(p)
-#                    if md.is_unknown():
-#                        logging.error("oooops, player %s is playing, but did "
-#                                      "not receive metadata, "
-#                                      "will reuse old metadata",
-#                                      p)
-#                        md = self.metadata
+
 
                     if (p not in active_players):
                         new_player_started = p
