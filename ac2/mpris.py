@@ -357,6 +357,7 @@ class MPRISController():
         ts = datetime.datetime.now()
 
         while not(finished):
+            additional_delay = 0
             new_player_started = None
             metadata_notified = False
             playing = False
@@ -476,15 +477,21 @@ class MPRISController():
             # Workaround for wrong state messages by Spotify
             # Assume Spotify is still playing for 10 seconds if it's the
             # active (or last stopped) player
-            if self.playername(self.active_player) == SPOTIFY_NAME and \
-                not(playing):
-                spotify_stopped += 1
-                if spotify_stopped < 26:
-                    if (spotify_stopped % 5) == 0:
-                        logging.debug("spotify workaround %s", spotify_stopped)
-                    playing = True
+            if self.playername(self.active_player) == SPOTIFY_NAME:
+                # Less aggressive metadata polling on Spotify as each polling will 
+                # result in an API request
+                additional_delay = 4
+                if not(playing):
+                    spotify_stopped += 1 + additional_delay
+                    if spotify_stopped < 26:
+                        if (spotify_stopped % 5) == 0:
+                            logging.debug("spotify workaround %s", spotify_stopped)
+                        playing = True
+                    
+                    
+              
 
-            # Woraround for LMS muting the output after stopping the
+            # Workaround for LMS muting the output after stopping the
             # player
             if self.volume_control is not None:
                 if self.playername(self.active_player) != LMS_NAME:
@@ -525,7 +532,7 @@ class MPRISController():
 
             self.last_update = datetime.datetime.now()
 
-            time.sleep(self.loop_delay)
+            time.sleep(self.loop_delay+additional_delay)
 
     # ##
     # ## controller functions
