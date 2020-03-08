@@ -63,6 +63,9 @@ class MetadataHTTPRequest(MetadataDisplay):
                 r = requests.post(self.url, 
                                   json=metadata.__dict__,
                                   timeout=10)
+                logging.info("postest metadata update to %s (%s)", 
+                             self.url,
+                             metadata.__dict__)
             except Exception as e:
                 logging.error("Exception when posting metadata: %s", e)
                 return
