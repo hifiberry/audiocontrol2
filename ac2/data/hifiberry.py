@@ -35,10 +35,19 @@ def hifiberry_cover(song_mbid, album_mbid, artist_mbid, player="unknown"):
 
     try:
         url = "{}/cover/{}/{}/{}/{}".format(BASE_URL, song_mbid, album_mbid, artist_mbid, player)
-        cover_data = retrieve_url(url).text
+        cover_data = retrieve_url(url)
+        if cover_data is None:
+            return (None, 0, 0)
+        else:
+            cover_data = cover_data.text
         
         if cover_data is not None and len(cover_data)>0:
-            (cover_url, width, height) = cover_data.split("|")
+            try:
+                (cover_url, width, height) = cover_data.split("|")
+            except:
+                cover_url = None
+                width = 0
+                height = 0
             if cover_url=="":
                 cover_url = None
                 
@@ -53,6 +62,7 @@ def hifiberry_cover(song_mbid, album_mbid, artist_mbid, player="unknown"):
     except Exception as e:
         logging.warn("can't load cover for %s: %s", song_mbid, e)
         logging.exception(e)
+        return (None, 0, 0)
     
 
 def send_update(metadata):
