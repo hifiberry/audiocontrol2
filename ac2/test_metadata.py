@@ -22,10 +22,7 @@ SOFTWARE.
 
 import unittest
 
-from ac2.metadata import Metadata, enrich_metadata
-
-
-    
+from ac2.metadata import Metadata, enrich_metadata  
 
 class MetaDataTest(unittest.TestCase):
 
