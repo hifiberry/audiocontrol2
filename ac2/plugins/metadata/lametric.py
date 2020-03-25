@@ -63,6 +63,10 @@ class LaMetricPush(MetadataDisplay):
         
 
     def notify(self, metadata):
+        if metadata.artist is None or metadata.title is None:
+            logging.debug("ignoring undefined metatdata")
+            return 
+        
         data = {
                 "frames": [
                     {
