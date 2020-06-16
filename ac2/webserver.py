@@ -26,10 +26,14 @@ import json
 import copy
 import os
 import urllib.parse
+
 from bottle import Bottle, static_file, request, response
+from expiringdict import ExpiringDict
+
 
 from ac2.metadata import Metadata
 from ac2.plugins.metadata import MetadataDisplay
+
 
 
 class AudioControlWebserver(MetadataDisplay):
@@ -52,6 +56,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.thread = None
         self.lovers = []
         self.updaters = []
+        self.artwork = ExpiringDict(max_len=100, max_age_seconds=36000000)
 
         self.notify(Metadata("Artist", "Title", "Album"))
 
@@ -214,7 +219,8 @@ class AudioControlWebserver(MetadataDisplay):
         return static_file(filename, root='static')
 
     def artwork_handler(self, filename):
-        return static_file(self.artworkfile, root='/')
+        logging.error("artwork filename=%s",filename)
+        return static_file(self.artwork.get(filename), root='/')
 
     # ##
     # ## end URL handlers
@@ -239,36 +245,63 @@ class AudioControlWebserver(MetadataDisplay):
     # ##
     # ## end thread methods
     # ##
-
-    # ##
-    # ## metadata functions
-    # ##
-    def notify(self, metadata):
-        # Create a copy, because we might modify the artUrl
-        metadata = copy.copy(metadata)
-        self.metadata = metadata
-        localfile = None
-
-        # enrich_metadata(metadata)
-
+    
+    ###
+    ### Rewrite artwork URLs if necessary
+    ###
+    def process_metadata(self, metadata):
+        
         if metadata.artUrl is None:
-            metadata.artUrl = "static/unknown.png"
-
-        elif metadata.artUrl.startswith("file://"):
+            return
+        
+        if metadata.artUrl.startswith("file://"):
             localfile = metadata.artUrl[7:]
         else:
             url = urllib.parse.urlparse(metadata.artUrl, scheme="file")
             if url.scheme == "file":
                 localfile = url.path
-
+                
         if localfile is not None:
-            if os.path.isfile(localfile):
-                self.artworkfile = localfile
-                # use only file part of path name
-                metadata.artUrl = "artwork/" + \
-                    os.path.split(localfile)[1]
-            else:
-                metadata.artUrl = "static/unknown.png"
+            # use only file part of path name, but keep it 
+            key = str(localfile).replace("/","-").replace(" ","-")
+            metadata.artUrl = "artwork/" + key
+            self.artwork[key]=localfile
+            
+            logging.error("%s %s",localfile,metadata.artUrl)
+    
+
+    # ##
+    # ## metadata functions
+    # ##
+    def notify(self, metadata):
+        # Create a copy, because we might need to modify the artUrl
+        metadata = copy.copy(metadata)
+        self.metadata = metadata
+        localfile = None
+
+#         if metadata.artUrl is None:
+#             metadata.artUrl = "static/unknown.png"
+# 
+#         elif metadata.artUrl.startswith("file://"):
+#             localfile = metadata.artUrl[7:]
+#         else:
+#             url = urllib.parse.urlparse(metadata.artUrl, scheme="file")
+#             if url.scheme == "file":
+#                 localfile = url.path
+#                 
+#         logging.error("localfile: %s", localfile)
+# 
+#         if localfile is not None:
+#             if os.path.isfile(localfile):
+#                 # use only file part of path name, but keep it 
+#                 key = str(localfile).replace("/","-").replace(" ","-")
+#                 metadata.artUrl = "artwork/" + key
+#                 self.artwork[key]=localfile
+#                 
+#                 logging.error("%s %s",localfile,metadata.artUrl)
+#             else:
+#                 metadata.artUrl = "static/unknown.png"
+                
 
     def update_volume(self, vol):
         self.volume = vol

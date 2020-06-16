@@ -93,9 +93,13 @@ class MPRISController():
         self.metadata = Metadata()
         self.metadata_lock = threading.Lock()
         self.volume_control = None
+        self.metadata_processors = []
 
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
+
+    def register_metadata_processor(self, mdproc):
+        self.metadata_processors.append(mdproc)
 
     def set_volume_control(self, volume_control):
         self.volume_control = volume_control
@@ -225,6 +229,11 @@ class MPRISController():
             md.playerName = self.playername(name)
 
             md.fix_problems()
+            
+            for p in self.metadata_processors:
+                p.process_metadata(md)
+                
+            logging.error(md.artUrl)
 
             return md
 

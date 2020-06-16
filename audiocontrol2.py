@@ -45,6 +45,7 @@ from ac2.webserver import AudioControlWebserver
 from ac2.alsavolume import ALSAVolume
 from ac2.metadata import Metadata
 import ac2.metadata
+from ac2.data.mpd import MpdMetadataProcessor
 
 from ac2 import watchdog
 
@@ -300,8 +301,16 @@ def parse_config(debugmode=False):
 
         except Exception as e:
             logging.error("can't activate volume_post: %s", e)
-
-
+            
+    # MPD cover
+    if "mpd" in config.sections():
+        mpddir=config.get("mpd", "musicdir",fallback=None)
+        if mpddir is not None:
+            mpdproc = MpdMetadataProcessor(mpddir)
+            mpris.register_metadata_processor(mpdproc)
+            logging.info("added MPD cover art handler on %s",mpddir)
+            
+            
     # Other settings
     if "privacy" in config.sections():
         extmd = config.getboolean("privacy",
@@ -317,6 +326,12 @@ def parse_config(debugmode=False):
         logging.info("no privacy settings found, using defaults")
 
     logging.debug("ac2.md.extmd %s", ac2.metadata.external_metadata)
+    
+    # Web server has to rewrite artwork URLs
+    if server is not None:
+        mpris.register_metadata_processor(server)
+        logging.info("enabled web server meta data processor")
+    
 
     # Other system settings
     global startup_command

@@ -108,6 +108,7 @@ class Metadata:
 
         return not(self.__eq__(other))
 
+    # TODO: change this to a metadata parser 
     def fix_problems(self, guess=True):
         """
         Cleanup metadata for known problems
