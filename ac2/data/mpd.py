@@ -39,7 +39,7 @@ class MpdMetadataProcessor():
         if metadata.playerName=="mpd":
             url = metadata.streamUrl
             
-            if metadata.artUrl is None:
+            if metadata.artUrl is None and url is not None:
                 
                 if url == self.currentUrl:
                     metadata.artUrl=self.currentCover
