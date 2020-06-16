@@ -50,7 +50,6 @@ class AudioControlWebserver(MetadataDisplay):
         self.route()
         self.player_control = None
         self.lastfm_network = None
-        self.radio_stations = None
         self.volume_control = None
         self.volume = 0
         self.thread = None

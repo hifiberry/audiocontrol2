@@ -194,14 +194,6 @@ def parse_config(debugmode=False):
             logging.info("configuring watchdog %s: %s",
                          player, services)
 
-    # Radio
-    if server is not None and "radio" in config.sections():
-        stations = OrderedDict()
-        for station in config["radio"]:
-            url = config["radio"][station]
-            stations[station] = url
-        server.set_radio_stations(stations)
-
     # Volume
     volume_control = None
     if "volume" in config.sections():
