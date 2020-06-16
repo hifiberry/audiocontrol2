@@ -47,11 +47,7 @@ class MpdMetadataProcessor():
                     musicfile = Path(self.base, metadata.streamUrl)
                     self.currentCover=self.coverart(musicfile)
                     self.currentUrl=url
-                    logging.error("file: %s",musicfile)
-                    logging.error("cover: %s",self.currentCover)
                     metadata.artUrl="file://"+str(self.currentCover)
-                    logging.error("file: %s",musicfile)
-                    logging.error("cover: %s",metadata.artUrl)
                 
                 
     def coverart(self, musicfile):

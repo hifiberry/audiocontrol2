@@ -233,8 +233,6 @@ class MPRISController():
             for p in self.metadata_processors:
                 p.process_metadata(md)
                 
-            logging.error(md.artUrl)
-
             return md
 
         except dbus.exceptions.DBusException as e:

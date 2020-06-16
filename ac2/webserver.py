@@ -267,9 +267,6 @@ class AudioControlWebserver(MetadataDisplay):
             metadata.artUrl = "artwork/" + key
             self.artwork[key]=localfile
             
-            logging.error("%s %s",localfile,metadata.artUrl)
-    
-
     # ##
     # ## metadata functions
     # ##
