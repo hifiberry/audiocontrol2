@@ -268,7 +268,7 @@ class AudioControlWebserver(MetadataDisplay):
                 localfile = url.path
                 
         if localfile is not None:
-            if pathlib.Path(localfile).exist:
+            if pathlib.Path(localfile).exists():
                 # use only file part of path name, but keep it 
                 key = str(localfile).replace("/","-").replace(" ","-")
                 metadata.artUrl = "artwork/" + key
