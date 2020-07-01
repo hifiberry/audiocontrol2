@@ -24,8 +24,8 @@ import logging
 import threading
 import json
 import copy
-import os
 import urllib.parse
+import pathlib
 
 from bottle import Bottle, static_file, request, response
 from expiringdict import ExpiringDict
@@ -219,7 +219,14 @@ class AudioControlWebserver(MetadataDisplay):
 
     def artwork_handler(self, filename):
         logging.info("artwork filename=%s",filename)
-        return static_file(self.artwork.get(filename), root='/')
+        realfile = self.artwork.get(filename)
+        if realfile is None:
+            logging.warning("%s does not exist in cache",filename)
+            
+        if not(pathlib.Path(realfile).exists()):
+            logging.warning("%s does not exist",realfile)
+            
+        return static_file(realfile, root='/')
 
     # ##
     # ## end URL handlers
@@ -261,10 +268,16 @@ class AudioControlWebserver(MetadataDisplay):
                 localfile = url.path
                 
         if localfile is not None:
-            # use only file part of path name, but keep it 
-            key = str(localfile).replace("/","-").replace(" ","-")
-            metadata.artUrl = "artwork/" + key
-            self.artwork[key]=localfile
+            if pathlib.Path(localfile).exist:
+                # use only file part of path name, but keep it 
+                key = str(localfile).replace("/","-").replace(" ","-")
+                metadata.artUrl = "artwork/" + key
+                self.artwork[key]=localfile
+            else:
+                logging.warn("artwork file %s does not exist (%s)",
+                             localfile,
+                             metadata.artUrl)
+                
             
     # ##
     # ## metadata functions
@@ -273,8 +286,6 @@ class AudioControlWebserver(MetadataDisplay):
         # Create a copy, because we might need to modify the artUrl
         metadata = copy.copy(metadata)
         self.metadata = metadata
-        localfile = None
-
                
 
     def update_volume(self, vol):
