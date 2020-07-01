@@ -218,7 +218,7 @@ class AudioControlWebserver(MetadataDisplay):
         return static_file(filename, root='static')
 
     def artwork_handler(self, filename):
-        logging.error("artwork filename=%s",filename)
+        logging.info("artwork filename=%s",filename)
         return static_file(self.artwork.get(filename), root='/')
 
     # ##
