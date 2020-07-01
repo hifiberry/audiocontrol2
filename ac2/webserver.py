@@ -275,29 +275,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.metadata = metadata
         localfile = None
 
-#         if metadata.artUrl is None:
-#             metadata.artUrl = "static/unknown.png"
-# 
-#         elif metadata.artUrl.startswith("file://"):
-#             localfile = metadata.artUrl[7:]
-#         else:
-#             url = urllib.parse.urlparse(metadata.artUrl, scheme="file")
-#             if url.scheme == "file":
-#                 localfile = url.path
-#                 
-#         logging.error("localfile: %s", localfile)
-# 
-#         if localfile is not None:
-#             if os.path.isfile(localfile):
-#                 # use only file part of path name, but keep it 
-#                 key = str(localfile).replace("/","-").replace(" ","-")
-#                 metadata.artUrl = "artwork/" + key
-#                 self.artwork[key]=localfile
-#                 
-#                 logging.error("%s %s",localfile,metadata.artUrl)
-#             else:
-#                 metadata.artUrl = "static/unknown.png"
-                
+               
 
     def update_volume(self, vol):
         self.volume = vol
