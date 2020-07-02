@@ -260,6 +260,7 @@ class AudioControlWebserver(MetadataDisplay):
         if metadata.artUrl is None:
             return
         
+        localfile=None
         if metadata.artUrl.startswith("file://"):
             localfile = metadata.artUrl[7:]
         else:
