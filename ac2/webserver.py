@@ -165,7 +165,7 @@ class AudioControlWebserver(MetadataDisplay):
         return json.dumps(self.metadata.__dict__, skipkeys=True)
 
     def track_handler(self, command):
-        if (command in "love", "unlove"):
+        if (command in ["love", "unlove"]):
             if not(self.send_command(command)):
                 response.status = 500
                 return "{} failed".format(command)
