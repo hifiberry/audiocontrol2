@@ -260,6 +260,7 @@ class AudioControlWebserver(MetadataDisplay):
         if metadata.artUrl is None:
             return
         
+        
         localfile=None
         if metadata.artUrl.startswith("file://"):
             localfile = metadata.artUrl[7:]
@@ -275,9 +276,10 @@ class AudioControlWebserver(MetadataDisplay):
                 metadata.artUrl = "artwork/" + key
                 self.artwork[key]=localfile
             else:
-                logging.warn("artwork file %s does not exist (%s)",
+                logging.warn("artwork file %s does not exist, removing artUrl (%s)",
                              localfile,
                              metadata.artUrl)
+                metadata.artUrl=None
                 
             
     # ##
