@@ -59,11 +59,19 @@ class MetadataHTTPRequest(MetadataDisplay):
                 os.path.split(localfile)[1]
                 
         md_dict=metadata.__dict__
-        if md_dict.get("artist","").lower() == "unknown artist":
-            md_dict["artist"] = None
+        try:
+            if md_dict.get("artist").lower() == "unknown artist":
+                md_dict["artist"] = None
+        except:
+            # artist is None
+            pass
             
-        if md_dict.get("title","").lower() == "unknown title":
-            md_dict["title"] = None
+        try:
+            if md_dict.get("title","").lower() == "unknown title":
+                md_dict["title"] = None
+        except:
+            # title is None
+            pass
             
 
         if (self.request_type == "json"):
