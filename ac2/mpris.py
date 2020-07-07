@@ -449,7 +449,14 @@ class MPRISController():
                     elif state != previous_state:
                         logging.debug("changed state to playing")
                         self.metadata_notify(md)
-
+                        
+                    # Some players deliver artwork after initial metadata
+                    if md.artUrl != self.metadata.artUrl:
+                        logging.debug("artwork changes from %s to %s",
+                                      self.metadata.artUrl,
+                                      md.artUrl)
+                        self.metadata_notify(md)
+                        
                     # Add metadata if this is a new song
                     if new_song:
                         enrich_metadata_bg(md, callback=self)
