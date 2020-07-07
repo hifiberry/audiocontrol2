@@ -57,15 +57,23 @@ class MetadataHTTPRequest(MetadataDisplay):
             # use only file part of path name
             metadata.artUrl = "artwork/" + \
                 os.path.split(localfile)[1]
+                
+        md_dict=metadata.__dict__
+        if md_dict.get("artist","").lower() == "unknown artist":
+            md_dict["artist"] = None
+            
+        if md_dict.get("title","").lower() == "unknown title":
+            md_dict["title"] = None
+            
 
         if (self.request_type == "json"):
             try:
                 r = requests.post(self.url, 
-                                  json=metadata.__dict__,
+                                  json=md_dict,
                                   timeout=10)
-                logging.info("postest metadata update to %s (%s)", 
+                logging.info("posted metadata update to %s (%s)", 
                              self.url,
-                             metadata.__dict__)
+                             md_dict)
             except Exception as e:
                 logging.error("Exception when posting metadata: %s", e)
                 return
