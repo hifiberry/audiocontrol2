@@ -77,6 +77,8 @@ class Metadata:
         self.releaseDate = None
         self.trackid = None
         self.hifiberry_cover_found=False
+        self.duration=0
+        self.time=0
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
@@ -108,7 +110,6 @@ class Metadata:
 
         return not(self.__eq__(other))
 
-    # TODO: change this to a metadata parser 
     def fix_problems(self, guess=True):
         """
         Cleanup metadata for known problems
@@ -186,9 +187,6 @@ class Metadata:
             return True
         else:
             return False
-        
-    
-        
 
     def songId(self):
         return "{}/{}".format(self.artist, self.title)

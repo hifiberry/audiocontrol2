@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-import dbus
+
 import time
 import logging
 import datetime
@@ -28,29 +28,18 @@ import copy
 from random import randint
 import threading
 
+from ac2.constants import CMD_NEXT, CMD_PAUSE, CMD_PLAY, CMD_PLAYPAUSE, \
+    CMD_PREV, CMD_SEEK, CMD_STOP, STATE_PLAYING, STATE_PAUSED, STATE_STOPPED
+
+from ac2.players.mpdcontrol import MPDControl
+from ac2.players.mpris import MPRIS, MPRIS_PREFIX
 from ac2.metadata import Metadata, enrich_metadata_bg
 # from ac2.controller import PlayerController
 from ac2 import watchdog
-from ac2.helpers import array_to_string
+
 from usagecollector.client import report_usage
 
-PLAYING = "playing"
-PAUSED = "pauses"
-
 mpris = None
-
-MPRIS_NEXT = "Next"
-MPRIS_PREV = "Previous"
-MPRIS_PAUSE = "Pause"
-MPRIS_PLAYPAUSE = "PlayPause"
-MPRIS_STOP = "Stop"
-MPRIS_PLAY = "Play"
-
-MPRIS_PREFIX = "org.mpris.MediaPlayer2."
-
-mpris_commands = [MPRIS_NEXT, MPRIS_PREV,
-                  MPRIS_PAUSE, MPRIS_PLAYPAUSE,
-                  MPRIS_STOP, MPRIS_PLAY]
 
 SPOTIFY_NAME = "spotifyd"
 LMS_NAME = "lms"
@@ -74,9 +63,9 @@ class PlayerState:
         return self.state + str(self.metadata)
 
 
-class MPRISController():
+class AudioController():
     """
-    Controller for MPRIS enabled media players
+    Controller for MPRIS and non-MPRIS media players
     """
 
     def __init__(self, auto_pause=True, loop_delay=1, ignore_players=[]):
@@ -89,12 +78,24 @@ class MPRISController():
         self.ignore_players = ignore_players
         self.metadata = {}
         self.playing = False
-        self.connect_dbus()
         self.metadata = Metadata()
         self.metadata_lock = threading.Lock()
         self.volume_control = None
         self.metadata_processors = []
-
+        self.players={}
+        self.mpris = MPRIS()
+        self.mpris.connect_dbus()
+        
+        self.register_nonmpris_players()
+    
+    
+    """
+    Register all non-mpris player controls
+    """
+    def register_nonmpris_players(self):
+        self.players["mpd"]=MPDControl()
+        
+        
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
 
@@ -119,153 +120,43 @@ class MPRISController():
 
         self.metadata = metadata
 
-    def connect_dbus(self):
-        self.bus = dbus.SystemBus()
-        self.device_prop_interfaces = {}
 
-    def dbus_get_device_prop_interface(self, name):
-        proxy = self.bus.get_object(name, "/org/mpris/MediaPlayer2")
-        device_prop = dbus.Interface(
-            proxy, "org.freedesktop.DBus.Properties")
-        return device_prop
-
-    def retrievePlayers(self):
+    def all_players(self):
         """
-        Returns a list of all MPRIS enabled players that are active in
-        the system
+        Returns a list of MPRIS and non-MPRIS players
         """
-        return [name for name in self.bus.list_names()
-                if name.startswith("org.mpris")]
+        players=list(self.players.keys())+self.mpris.retrieve_players()
+        logging.info("players: %s",players)
+        return players
+        
 
-    def retrieveState(self, name):
+    def get_player_state(self, name):
         """
         Returns the playback state for the given player instance
+        
+        It can handle both MPRIS and non-MPRIS players
         """
-        try:
-            device_prop = self.dbus_get_device_prop_interface(name)
-            state = device_prop.Get("org.mpris.MediaPlayer2.Player",
-                                    "PlaybackStatus")
-            return state
-        except Exception as e:
-            logging.warn("got exception %s", e)
-
-    def retrieveCommands(self, name):
-        commands = {
-            "pause": "CanPause",
-            "next": "CanGoNext",
-            "previous": "CanGoPrevious",
-            "play": "CanPlay",
-            "seek": "CanSeek"
-        }
-        try:
-            supported_commands = ["stop"]  # Stop must always be supported
-            device_prop = self.dbus_get_device_prop_interface(name)
-            for command in commands:
-                supported = device_prop.Get("org.mpris.MediaPlayer2.Player",
-                                            commands[command])
-                if supported:
-                    supported_commands.append(command)
-        except Exception as e:
-            logging.warn("got exception %s", e)
-
-        return supported_commands
-
-    def retrieveMeta(self, name):
-        """
-        Return the metadata for the given player instance
-        """
-        try:
-            device_prop = self.dbus_get_device_prop_interface(name)
-            prop = device_prop.Get(
-                "org.mpris.MediaPlayer2.Player", "Metadata")
-            try:
-                artist = array_to_string(prop.get("xesam:artist"))
-            except:
-                artist = None
-
-            try:
-                title = prop.get("xesam:title")
-            except:
-                title = None
-
-            try:
-                albumArtist = array_to_string(prop.get("xesam:albumArtist"))
-            except:
-                albumArtist = None
-
-            try:
-                albumTitle = prop.get("xesam:album")
-            except:
-                albumTitle = None
-
-            try:
-                artURL = prop.get("mpris:artUrl")
-            except:
-                artURL = None
-
-            try:
-                discNumber = prop.get("xesam:discNumber")
-            except:
-                discNumber = None
-
-            try:
-                trackNumber = prop.get("xesam:trackNumber")
-            except:
-                trackNumber = None
-
-            md = Metadata(artist, title, albumArtist, albumTitle,
-              artURL, discNumber, trackNumber)
-
-            try:
-                md.streamUrl = prop.get("xesam:url")
-            except:
-                pass
-
-            try:
-                md.trackId = prop.get("mpris:trackid")
-            except:
-                pass
-
-            md.playerName = self.playername(name)
-
-            md.fix_problems()
+        
+        if name in self.players.keys():
+            return self.players[name].get_state()
+        else:
+            return self.mpris.retrieve_state(name)
+        
+    def get_supported_commands(self, name):
+        if name in self.players.keys():
+            return self.players[name].get_supported_commands()
+        else:
+            return self.mpris.get_supported_commands(name)
+        
+        
+    def send_command_to_player(self,name,command):
+        if name in self.players.keys():
+            self.players[name].send_command(command)
+        else:
+            self.mpris.send_command(name)
+        
+        
             
-            for p in self.metadata_processors:
-                p.process_metadata(md)
-                
-            return md
-
-        except dbus.exceptions.DBusException as e:
-            if "ServiceUnknown" in e.__class__.__name__:
-                # unfortunately we can't do anything about this and
-                # logging doesn't help, therefore just ignoring this case
-                pass
-                #  logging.warning("service %s disappered, cleaning up", e)
-            else:
-                logging.warning("no mpris data received %s", e.__class__.__name__)
-
-            md = Metadata()
-            md.playerName = self.playername(name)
-            return md
-
-    def mpris_command(self, playername, command):
-        try:
-            if command in mpris_commands:
-                proxy = self.bus.get_object(playername,
-                                            "/org/mpris/MediaPlayer2")
-                player = dbus.Interface(
-                    proxy, dbus_interface='org.mpris.MediaPlayer2.Player')
-
-                run_command = getattr(player, command,
-                                      lambda: "Unknown command")
-                return run_command()
-            else:
-                logging.error("MPRIS command %s not supported", command)
-        except Exception as e:
-            logging.error("exception %s while sending MPRIS command %s to %s",
-                          e, command, playername)
-            return False
-
     def pause_inactive(self, active_player):
         """
         Automatically pause other player if playback was started
@@ -273,28 +164,28 @@ class MPRISController():
         """
         for p in self.state_table:
             if (p != active_player) and \
-                    (self.state_table[p].state == PLAYING):
+                    (self.state_table[p].state == STATE_PLAYING):
                 logging.info("Pausing " + self.playername(p))
-                self.mpris_command(p, MPRIS_PAUSE)
+                self.send_command(p, CMD_PAUSE)
+
 
     def pause_all(self):
         for player in self.state_table:
-            self.mpris_command(player, MPRIS_PAUSE)
+            self.send_command(player, CMD_PAUSE)
 
     def print_players(self):
         for p in self.state_table:
             print(self.playername(p))
 
-    def playername(self, mprisname):
-        if mprisname is None:
+    def playername(self, name):
+        if name is None:
             return
-        if (mprisname.startswith(MPRIS_PREFIX)):
-            return mprisname[len(MPRIS_PREFIX):]
+        if (name.startswith(MPRIS_PREFIX)):
+            return name[len(MPRIS_PREFIX):]
         else:
-            return mprisname
+            return name
 
     def send_command(self, command, playerName=None):
-        res = None
         if playerName is None:
             if self.active_player is None:
                 logging.info("No active player, ignoring %s", command)
@@ -302,25 +193,34 @@ class MPRISController():
             else:
                 playerName = self.active_player
 
-        if playerName.startswith(MPRIS_PREFIX):
-            res = self.mpris_command(playerName, command)
-        else:
-            res = self.mpris_command(MPRIS_PREFIX + playerName, command)
-            
+        res = self.send_command_to_player(playerName, command)    
         logging.info("sent %s to %s", command, playerName)
 
         return res
 
     def activate_player(self, playername):
 
-        command = MPRIS_PLAY
+        command = CMD_PLAY
         if playername.startswith(MPRIS_PREFIX):
-            res = self.mpris_command(playername, command)
+            res = self.send_command_to_player(playername, command)
         else:
             res = self.mpris_command(MPRIS_PREFIX + playername, command)
 
         return res
-
+    
+    
+    def get_meta(self, name):
+        if name in self.players.keys():
+            md=self.players[name].get_meta()
+        else:
+            md=self.mpris.get_meta(name)
+            
+        md.fix_problems()
+        for p in self.metadata_processors:
+            p.process_metadata(md)
+            
+        return md
+                
     def update_metadata_attributes(self, updates, songId):
         logging.debug("received metadata update: %s", updates)
 
@@ -374,14 +274,14 @@ class MPRISController():
             ts = datetime.datetime.now()
             duration = (ts-last_ts).total_seconds()
 
-            for p in self.retrievePlayers():
+            for p in self.all_players():
 
                 if self.playername(p) in self.ignore_players:
                     continue
-
+                
                 if p not in self.state_table:
                     ps = PlayerState()
-                    ps.supported_commands = self.retrieveCommands(p)
+                    ps.supported_commands = self.get_supported_commands(p)
                     logging.debug("Player %s supports %s",
                                   p,
                                   ps.supported_commands)
@@ -389,7 +289,8 @@ class MPRISController():
 
                 thisplayer_state = "unknown"
                 try:
-                    thisplayer_state = self.retrieveState(p).lower()
+                    thisplayer_state = self.get_player_state(p).lower()
+                    logging.error("state of %s = %s",p,thisplayer_state)
                     self.state_table[p].failed = 0
                 except:
                     logging.info("Got no state from " + p)
@@ -407,7 +308,7 @@ class MPRISController():
 
                 # Check if playback started on a player that wasn't
                 # playing before
-                if thisplayer_state == PLAYING:
+                if thisplayer_state == STATE_PLAYING:
                     playing = True
                     state = "playing"
 
@@ -419,7 +320,7 @@ class MPRISController():
                         
                     report_usage("audiocontrol_playing_{}".format(self.playername(p)),duration)
 
-                    md = self.retrieveMeta(p)
+                    md = self.get_meta(p)
 
 
                     if (p not in active_players):
@@ -476,7 +377,7 @@ class MPRISController():
                     # update metadata for stopped players from time to time
                     i = randint(0, 600)
                     if (i == 0):
-                        md = self.retrieveMeta(p)
+                        md = self.get_meta(p)
                         md.playerState = thisplayer_state
                         self.state_table[p].metadata = md
 
@@ -523,7 +424,7 @@ class MPRISController():
             # or stopped
             if not(playing) and len(active_players) > 0:
                 p = active_players[0]
-                md = self.retrieveMeta(p)
+                md = self.get_meta(p)
                 md.playerState = self.state_table[p].state
                 state = md.playerState
 
@@ -553,27 +454,27 @@ class MPRISController():
     # ##
 
     def previous(self):
-        self.send_command(MPRIS_PREV)
+        self.send_command(CMD_PREV)
 
     def next(self):
-        self.send_command(MPRIS_NEXT)
+        self.send_command(CMD_NEXT)
 
     def playpause(self, pause=None):
         command = None
         if pause is None:
             if self.playing:
-                command=MPRIS_PAUSE
+                command=CMD_PAUSE
             else:
-                command=MPRIS_PLAY
+                command=CMD_PLAY
         elif pause:
-            command=MPRIS_PAUSE
+            command=CMD_PAUSE
         else:
-            command=MPRIS_PLAY
+            command=CMD_PLAY
                 
         self.send_command(command)
 
     def stop(self):
-            self.send_command(MPRIS_STOP)
+            self.send_command(CMD_STOP)
 
     # ##
     # ## end controller functions

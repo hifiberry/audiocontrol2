@@ -5,3 +5,4 @@ netifaces
 git+https://github.com/hifiberry/usagecollector@master
 python-Levenshtein
 musicbrainzngs
+python-mpd2

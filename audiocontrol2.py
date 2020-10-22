@@ -37,7 +37,7 @@ from _collections import OrderedDict
 
 from usagecollector.client import report_activate
 
-from ac2.mpris import MPRISController
+from ac2.controller import AudioController
 import ac2.data.lastfm as lastfmdata
 
 from ac2.plugins.metadata.lastfm import LastFMScrobbler
@@ -49,7 +49,7 @@ from ac2.data.mpd import MpdMetadataProcessor
 
 from ac2 import watchdog
 
-mpris = MPRISController()
+mpris = AudioController()
 startup_command = None
 
 
