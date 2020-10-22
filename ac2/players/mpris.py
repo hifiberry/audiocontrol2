@@ -24,7 +24,7 @@ import dbus
 import logging
 from ac2.metadata import Metadata
 
-from ac2.constants import CMD_NEXT, CMD_PAUSE, CMD_PLAY, CMD_PLAYPAUSE, CMD_PREV, CMD_SEEK, CMD_STOP
+from ac2.constants import CMD_NEXT, CMD_PAUSE, CMD_PLAY, CMD_PLAYPAUSE, CMD_PREV, CMD_STOP
 from ac2.helpers import array_to_string
 
 mpris_commands = [CMD_NEXT, CMD_PREV,
