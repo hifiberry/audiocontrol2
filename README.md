@@ -7,3 +7,5 @@ This is a central part of HiFiBerryOS that handles multiple concurrent media pla
 This is the core controller application of [HiFiBerryOS](https://github.com/hifiberry/hifiberry-os), but feel free to use it
 any project of your choice.
 To work well, all local players should support MPRIS.
+
+The latest version now allows Non-MPRIS players. However, for these players interfaces must be developed individually.
