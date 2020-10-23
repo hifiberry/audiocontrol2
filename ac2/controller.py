@@ -212,7 +212,11 @@ class AudioController():
         else:
             md=self.mpris.get_meta(name)
             
+        if md is None:
+            return None
+        
         md.fix_problems()
+            
         for p in self.metadata_processors:
             p.process_metadata(md)
             

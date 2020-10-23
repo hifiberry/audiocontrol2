@@ -28,22 +28,6 @@ import time
 control_registry={}
 registered_players = None
 
-"""
-A simple function that allows to map attributes to different keys
-
-e.g. 
-
-dst={}
-map_attribute({"k1":"v1"},dst,{"k1":"n1"})
-pritn(dst)
-{"k1":"v1"}
-"""
-def map_attributes(src, dst, mapping):
-    for key in src:
-        if key in mapping:
-            dst[mapping[key]]=src[key]
-            
-            
 class PlayerControl:
 
     def __init__(self, args):

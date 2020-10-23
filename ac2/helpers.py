@@ -21,7 +21,7 @@ SOFTWARE.
 '''
 
 
-def array_to_string(arr):
+def array_to_string(arr, do_not_flatten_strings=True):
     """
     Converts an array of objects to a comma separated string
     """
@@ -29,6 +29,9 @@ def array_to_string(arr):
 
     if arr is None:
         return None
+    
+    if do_not_flatten_strings and isinstance(arr, str):
+        return arr
 
     if hasattr(arr, '__iter__'):
         for part in arr:
@@ -40,3 +43,23 @@ def array_to_string(arr):
             return ""
     else:
         return str(arr)
+
+
+"""
+A simple function that allows to map attributes to different keys
+
+e.g. 
+
+dst={}
+map_attribute({"k1":"v1"},dst,{"k1":"n1"})
+pritn(dst)
+{"k1":"v1"}
+"""
+def map_attributes(src, dst, mapping, flatten_array=True):
+    for key in src:
+        if key in mapping:
+            if flatten_array:
+                dst[mapping[key]]=array_to_string(src[key])
+            else:
+                dst[mapping[key]]=src[key]
+            

@@ -22,7 +22,8 @@ SOFTWARE.
 
 import logging
 
-from ac2.players import PlayerControl,add_control_registry, map_attributes
+from ac2.helpers import map_attributes
+from ac2.players import PlayerControl
 from ac2.constants import CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_STOP, CMD_PLAY, CMD_SEEK, \
     CMD_RANDOM, CMD_NORANDOM, CMD_REPEAT_ALL, CMD_REPEAT_NONE, \
     STATE_PAUSED, STATE_PLAYING, STATE_STOPPED, STATE_UNDEF
@@ -203,15 +204,4 @@ class MPDControl(PlayerControl):
     """
     def is_active(self):
         return self.client is not None
-    
-
-# Register control class
-#add_control_registry("mpd",MPDControl)
-
-   
-# Demo code   
-logging.basicConfig(level=logging.DEBUG)
-#mpdc = MPDControl({"host": "192.168.0.12"})
-#print(mpdc.get_state()["metadata"])
-   
     

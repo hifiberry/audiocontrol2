@@ -19,7 +19,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
-from ac2.players.mpdcontrol import MPDControl
 
 '''
 This is the main audio control process that reads the configuration file,
@@ -47,6 +46,9 @@ from ac2.alsavolume import ALSAVolume
 from ac2.metadata import Metadata
 import ac2.metadata
 from ac2.data.mpd import MpdMetadataProcessor
+from ac2.players.mpdcontrol import MPDControl
+from ac2.players.vollibrespot import VollibspotifyControl
+
 
 from ac2 import watchdog
 
@@ -297,7 +299,9 @@ def parse_config(debugmode=False):
             
     # Native MPD backend and metadata processor
     if "mpd" in config.sections():
-        mpris.register_nonmpris_player("mpd",MPDControl())
+        mpdc = MPDControl()
+        mpdc.start()
+        mpris.register_nonmpris_player("mpd",mpdc)
         logging.info("registered non-MPRIS mpd backend")
 
         mpddir=config.get("mpd", "musicdir",fallback=None)
@@ -306,6 +310,10 @@ def parse_config(debugmode=False):
             mpris.register_metadata_processor(mpdproc)
             logging.info("added MPD cover art handler on %s",mpddir)
             
+    # Vollibrespot
+    vlrctl = VollibspotifyControl()
+    vlrctl.start()
+    mpris.register_nonmpris_player("spotify",vlrctl)
             
             
     # Other settings
