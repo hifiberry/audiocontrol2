@@ -86,15 +86,12 @@ class AudioController():
         self.mpris = MPRIS()
         self.mpris.connect_dbus()
         
-        self.register_nonmpris_players()
-    
     
     """
-    Register all non-mpris player controls
+    Register a non-mpris player controls
     """
-    def register_nonmpris_players(self):
-        self.players["mpd"]=MPDControl()
-        
+    def register_nonmpris_player(self,name,controller):
+        self.players[name]=controller
         
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)

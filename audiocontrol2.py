@@ -19,6 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
+from ac2.players.mpdcontrol import MPDControl
 
 '''
 This is the main audio control process that reads the configuration file,
@@ -294,13 +295,17 @@ def parse_config(debugmode=False):
         except Exception as e:
             logging.error("can't activate volume_post: %s", e)
             
-    # MPD cover
+    # Native MPD backend and metadata processor
     if "mpd" in config.sections():
+        mpris.register_nonmpris_player("mpd",MPDControl())
+        logging.info("registered non-MPRIS mpd backend")
+
         mpddir=config.get("mpd", "musicdir",fallback=None)
         if mpddir is not None:
             mpdproc = MpdMetadataProcessor(mpddir)
             mpris.register_metadata_processor(mpdproc)
             logging.info("added MPD cover art handler on %s",mpddir)
+            
             
             
     # Other settings
