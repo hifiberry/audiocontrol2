@@ -41,7 +41,7 @@ from usagecollector.client import report_usage
 
 mpris = None
 
-SPOTIFY_NAME = "spotifyd"
+# SPOTIFY_NAME = "spotifyd"
 LMS_NAME = "lms"
 
 
@@ -256,7 +256,7 @@ class AudioController():
         MAX_FAIL = 3
 
         # Workaround for spotifyd problems
-        spotify_stopped = 0
+#        spotify_stopped = 0
 
         # Workaround for squeezelite mute
         squeezelite_active = 0
@@ -312,8 +312,8 @@ class AudioController():
                     playing = True
                     state = "playing"
 
-                    if self.playername(p) == SPOTIFY_NAME:
-                        spotify_stopped = 0
+#                    if self.playername(p) == SPOTIFY_NAME:
+#                        spotify_stopped = 0
 
                     if self.playername(p) == LMS_NAME:
                         squeezelite_active = 2
@@ -389,22 +389,20 @@ class AudioController():
             else:
                 self.active_player = None
 
-            # Workaround for wrong state messages by Spotify
-            # Assume Spotify is still playing for 10 seconds if it's the
-            # active (or last stopped) player
-            if self.playername(self.active_player) == SPOTIFY_NAME:
-                # Less aggressive metadata polling on Spotify as each polling will 
-                # result in an API request
-                additional_delay = 4
-                if not(playing):
-                    spotify_stopped += 1 + additional_delay
-                    if spotify_stopped < 26:
-                        if (spotify_stopped % 5) == 0:
-                            logging.debug("spotify workaround %s", spotify_stopped)
-                        playing = True
-                    
-                    
-              
+#             # Workaround for wrong state messages by Spotify
+#             # Assume Spotify is still playing for 10 seconds if it's the
+#             # active (or last stopped) player
+#             if self.playername(self.active_player) == SPOTIFY_NAME:
+#                 # Less aggressive metadata polling on Spotify as each polling will 
+#                 # result in an API request
+#                 additional_delay = 4
+#                 if not(playing):
+#                     spotify_stopped += 1 + additional_delay
+#                     if spotify_stopped < 26:
+#                         if (spotify_stopped % 5) == 0:
+#                             logging.debug("spotify workaround %s", spotify_stopped)
+#                         playing = True
+#                     
 
             # Workaround for LMS muting the output after stopping the
             # player
