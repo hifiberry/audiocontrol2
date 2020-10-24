@@ -137,7 +137,7 @@ class VollibspotifyMetadataListener(threading.Thread):
                 self.control.state = STATE_PLAYING
             elif message[0]=='{':
                 self.parse_message(message)
-            elif message=="\r\n":
+            elif message in [ "\r\n" , "kSpPlaybackLoading" ]:
                 pass
             else:
                 logging.error("Don't know what to do with %s",message)
@@ -150,7 +150,7 @@ class VollibspotifyMetadataListener(threading.Thread):
                 map_attributes(data["metadata"], md.__dict__, VOLSPOTIFY_ATTRIBUTE_MAP)
             elif "position_ms" in data:
                 pos=float(data["position_ms"])/1000
-                self.control.metadata.position = pos
+                self.control.metadata.set_position(pos)
             else:
                 logging.warn("don't know how to handle %s",data)
                 
