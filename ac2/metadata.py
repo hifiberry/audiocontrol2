@@ -23,6 +23,7 @@ SOFTWARE.
 import copy
 import threading
 import logging
+from time import time 
 
 from expiringdict import ExpiringDict
 
@@ -34,6 +35,7 @@ import ac2.data.coverartarchive as coverartarchive
 from ac2.data.identities import host_uuid
 from ac2.data.guess import guess_order, guess_stream_order, \
     ORDER_ARTIST_TITLE, ORDER_TITLE_ARTIST, ORDER_ARTIST_TITLE
+from ac2.constants import STATE_PLAYING
 
 # Use external metadata?
 external_metadata = True
@@ -79,6 +81,21 @@ class Metadata:
         self.hifiberry_cover_found=False
         self.duration=0
         self.time=0
+        self.position=0 # poosition in seconds
+        self.positionupdate=time() # last time position has been updated
+        
+    # set the current position
+    def set_position(self, seconds):
+        self.position=seconds
+        self.positionupdate=time()
+        
+    # get the current position
+    # if the player is playing, this will automatically update the current position 
+    def get_position(self):
+        if self.playerState != STATE_PLAYING:
+            return self.position
+        else:
+            return self.position + time()-self.positionupdate
 
     def sameSong(self, other):
         if not isinstance(other, Metadata):
