@@ -31,6 +31,9 @@ from ac2.constants import CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_PLAY
     STATE_PAUSED, STATE_PLAYING, STATE_UNDEF
 from ac2.metadata import Metadata
 
+VOLSPOTIFY_HELO = 0x1
+VOLSPOTIFY_HEARTBEAT = 0x2
+VOLSPOTIFY_TOKEN = 0x3
 VOLSPOTIFY_PAUSE = 0x4
 VOLSPOTIFY_PLAY = 0x5
 VOLSPOTIFY_PLAYPAUSE = 0x6
@@ -56,7 +59,7 @@ class VollibspotifyControl(PlayerControl):
     
     def __init__(self, args={}):
         self.client=None
-        self.playername="spotify"
+        self.playername="spotifyd"
         self.state = STATE_UNDEF
         self.metadata = Metadata()
 
@@ -83,11 +86,15 @@ class VollibspotifyControl(PlayerControl):
     def get_meta(self):
         return self.metadata
     
-    def send_command(self,command, _parameters):
-        if command not in self.get_supported_commands():
+    def send_command(self,command, parameters={}, mapping=True):
+        if mapping and command not in self.get_supported_commands():
             return False
         
-        cmd = VOLSPOTIFY_CMD_MAP[command] 
+        if mapping:
+            cmd = VOLSPOTIFY_CMD_MAP[command]
+        else:
+            cmd=command
+             
         serverAddressPort = (self.host, self.port+1)
         UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         UDPClientSocket.sendto(bytes([cmd]), serverAddressPort)
@@ -115,7 +122,6 @@ class VollibspotifyMetadataListener(threading.Thread):
         while(not self.finished):
             bytesAddressPair = serverSocket.recvfrom(bufferSize)
             message = bytesAddressPair[0]
-            logging.error("message from vollibrespot: %s",message)
             try:
                 message=message.decode("utf-8") 
             except:
@@ -131,16 +137,22 @@ class VollibspotifyMetadataListener(threading.Thread):
                 self.control.state = STATE_PLAYING
             elif message[0]=='{':
                 self.parse_message(message)
+            elif message=="\r\n":
+                pass
+            else:
+                logging.error("Don't know what to do with %s",message)
                 
     def parse_message(self,message):
-        logging.error("parsing %s", message)
         try: 
             data = json.loads(message)
             if "metadata" in data:
                 md = Metadata()
                 map_attributes(data["metadata"], md.__dict__, VOLSPOTIFY_ATTRIBUTE_MAP)
-                self.control.metadata=md
-            logging.error("data: %s", data)
-            logging.error("md: %s", md)
+            elif "position_ms" in data:
+                pos=float(data["position_ms"])/1000
+                self.control.metadata.position = pos
+            else:
+                logging.warn("don't know how to handle %s",data)
+                
         except Exception as e:
             logging.error("error while parsing %s (%s)", message,e)

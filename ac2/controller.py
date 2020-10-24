@@ -291,7 +291,6 @@ class AudioController():
                 thisplayer_state = "unknown"
                 try:
                     thisplayer_state = self.get_player_state(p).lower()
-                    logging.error("state of %s = %s",p,thisplayer_state)
                     self.state_table[p].failed = 0
                 except:
                     logging.info("Got no state from " + p)
