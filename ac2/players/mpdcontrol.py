@@ -22,6 +22,8 @@ SOFTWARE.
 
 import logging
 
+from mpd import MPDClient
+
 from ac2.helpers import map_attributes
 from ac2.players import PlayerControl
 from ac2.constants import CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_STOP, CMD_PLAY, CMD_SEEK, \
@@ -53,8 +55,6 @@ STATE_MAP={
 }
 
     
-from mpd import MPDClient
- 
 
 class MPDControl(PlayerControl):
     
