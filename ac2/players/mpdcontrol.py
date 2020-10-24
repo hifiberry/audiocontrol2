@@ -116,7 +116,7 @@ class MPDControl(PlayerControl):
     
     def get_state(self):
         if self.client is None:
-            self.reconnect()
+            self.connect()
 
         if self.client is None:
             return {}
