@@ -54,12 +54,13 @@ VOLSPOTIFY_CMD_MAP={
     CMD_PLAY: VOLSPOTIFY_PLAY
 }
 
+MYNAME = "spotifyd"
     
 class VollibspotifyControl(PlayerControl):
     
     def __init__(self, args={}):
         self.client=None
-        self.playername="spotifyd"
+        self.playername=MYNAME
         self.state = STATE_UNDEF
         self.metadata = Metadata()
 
@@ -137,7 +138,7 @@ class VollibspotifyMetadataListener(threading.Thread):
                 self.control.state = STATE_PLAYING
             elif message[0]=='{':
                 self.parse_message(message)
-            elif message in [ "\r\n" , "kSpPlaybackLoading" ]:
+            elif message in [ "\r\n" , "kSpPlaybackLoading", "kSpDeviceActive", "kSpPlaybackActive"]:
                 pass
             else:
                 logging.error("Don't know what to do with %s",message)
@@ -146,8 +147,12 @@ class VollibspotifyMetadataListener(threading.Thread):
         try: 
             data = json.loads(message)
             if "metadata" in data:
+                logging.error(data["metadata"])
                 md = Metadata()
                 map_attributes(data["metadata"], md.__dict__, VOLSPOTIFY_ATTRIBUTE_MAP)
+                md.artUrl = self.cover_url(data["metadata"]["albumartId"])
+                md.playerName = MYNAME
+                self.control.metadata = md
             elif "position_ms" in data:
                 pos=float(data["position_ms"])/1000
                 self.control.metadata.set_position(pos)
@@ -156,3 +161,12 @@ class VollibspotifyMetadataListener(threading.Thread):
                 
         except Exception as e:
             logging.error("error while parsing %s (%s)", message,e)
+            
+            
+    def cover_url(self,artids):
+        if artids is None or len(artids)==0:
+            return None
+        
+        # Use the last one for now which seems to be the highest resolution
+        artworkid=artids[len(artids)-1]
+        return "https://i.scdn.co/image/"+artworkid

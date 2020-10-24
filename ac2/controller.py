@@ -150,9 +150,7 @@ class AudioController():
         if name in self.players.keys():
             self.players[name].send_command(command)
         else:
-            self.mpris.send_command(name)
-        
-        
+            self.mpris.send_command(name,command)
             
     def pause_inactive(self, active_player):
         """
