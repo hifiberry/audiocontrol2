@@ -28,7 +28,7 @@ import json
 from ac2.helpers import map_attributes
 from ac2.players import PlayerControl
 from ac2.constants import CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_PLAY, \
-    STATE_PAUSED, STATE_PLAYING, STATE_UNDEF
+    STATE_PAUSED, STATE_PLAYING, STATE_UNDEF, STATE_STOPPED
 from ac2.metadata import Metadata
 
 VOLSPOTIFY_HELO = 0x1
@@ -61,7 +61,7 @@ class VollibspotifyControl(PlayerControl):
     def __init__(self, args={}):
         self.client=None
         self.playername=MYNAME
-        self.state = STATE_UNDEF
+        self.state = STATE_STOPPED
         self.metadata = Metadata()
 
         if "port" in args:
