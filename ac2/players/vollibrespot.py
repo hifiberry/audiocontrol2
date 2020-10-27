@@ -134,14 +134,17 @@ class VollibspotifyMetadataListener(threading.Thread):
                 self.control.state = STATE_PAUSED
             elif message=="kSpSinkInactive":
                 self.control.state = STATE_PAUSED
-            elif message=="kSpSinkActive":
+            elif message in ["kSpSinkActive","kSpPlaybackActive"]: 
                 self.control.state = STATE_PLAYING
             elif message[0]=='{':
                 self.parse_message(message)
-            elif message in [ "\r\n" , "kSpPlaybackLoading", "kSpDeviceActive", "kSpPlaybackActive"]:
-                pass
+            elif message in [ "\r\n" , "kSpPlaybackLoading", "kSpDeviceActive"]:
+                logging.debug("ignoring message %s",message)
             else:
                 logging.error("Don't know what to do with %s",message)
+                
+                
+            logging.error("processed %s",message)
                 
     def parse_message(self,message):
         try: 
