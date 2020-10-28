@@ -94,7 +94,7 @@ class VollibspotifyControl(PlayerControl):
     
     def set_state(self, state):
         self.state=state
-        self.is_alive()
+        self.report_alive()
         
     def report_alive(self):
         self.lastupdated = time.time()
