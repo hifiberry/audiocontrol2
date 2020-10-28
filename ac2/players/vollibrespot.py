@@ -24,11 +24,12 @@ import socket
 import logging
 import threading
 import json
+import time
 
 from ac2.helpers import map_attributes
 from ac2.players import PlayerControl
 from ac2.constants import CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_PLAY, \
-    STATE_PAUSED, STATE_PLAYING, STATE_UNDEF, STATE_STOPPED
+    STATE_PAUSED, STATE_PLAYING, STATE_STOPPED
 from ac2.metadata import Metadata
 
 VOLSPOTIFY_HELO = 0x1
@@ -74,6 +75,8 @@ class VollibspotifyControl(PlayerControl):
         else:
             self.host="localhost"
             
+        self.lastupdated=0
+            
     def start(self):
         self.listener = VollibspotifyMetadataListener(self)
         self.listener.start()
@@ -82,7 +85,19 @@ class VollibspotifyControl(PlayerControl):
         return [CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_PLAY]   
             
     def get_state(self):
-        return self.state
+        # If there was no update form Spotify during the last 30 minutes,
+        # there's probably nothing playing anymore
+        if time.time()-self.lastupdated < 1800:
+            return self.state
+        else:
+            return STATE_STOPPED
+    
+    def set_state(self, state):
+        self.state=state
+        self.is_alive()
+        
+    def report_alive(self):
+        self.lastupdated = time.time()
         
     def get_meta(self):
         return self.metadata
@@ -131,17 +146,20 @@ class VollibspotifyMetadataListener(threading.Thread):
                 
                 
             if message=="kSpPlaybackInactive":
-                self.control.state = STATE_PAUSED
+                self.control.set_state(STATE_PAUSED)
             elif message=="kSpSinkInactive":
-                self.control.state = STATE_PAUSED
+                self.control.set_state(STATE_PAUSED)
             elif message in ["kSpSinkActive","kSpPlaybackActive"]: 
-                self.control.state = STATE_PLAYING
+                self.control.set_state(STATE_PLAYING)
             elif message[0]=='{':
                 self.parse_message(message)
+                self.control.report_alive()
             elif message in [ "\r\n" , "kSpPlaybackLoading", "kSpDeviceActive"]:
                 logging.debug("ignoring message %s",message)
+                self.control.report_alive()
             else:
                 logging.error("Don't know what to do with %s",message)
+                self.control.report_alive()
                 
                 
             logging.error("processed %s",message)
