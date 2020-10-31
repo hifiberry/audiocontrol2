@@ -55,7 +55,7 @@ VOLSPOTIFY_CMD_MAP={
     CMD_PLAY: VOLSPOTIFY_PLAY
 }
 
-MYNAME = "spotifyd"
+MYNAME = "spotify"
     
 class VollibspotifyControl(PlayerControl):
     
@@ -177,6 +177,8 @@ class VollibspotifyMetadataListener(threading.Thread):
             elif "position_ms" in data:
                 pos=float(data["position_ms"])/1000
                 self.control.metadata.set_position(pos)
+            elif "volume" in data:
+                logging.debug("ignoring volume data")
             else:
                 logging.warn("don't know how to handle %s",data)
                 
