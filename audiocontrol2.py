@@ -33,7 +33,6 @@ import logging
 import os
 import sys
 import threading
-from _collections import OrderedDict
 
 from usagecollector.client import report_activate
 
@@ -48,6 +47,7 @@ import ac2.metadata
 from ac2.data.mpd import MpdMetadataProcessor
 from ac2.players.mpdcontrol import MPDControl
 from ac2.players.vollibrespot import VollibspotifyControl
+from ac2.players.vollibrespot import MYNAME as SPOTIFYNAME
 
 
 from ac2 import watchdog
@@ -91,7 +91,6 @@ def create_object(classname, param = None):
 
 def parse_config(debugmode=False):
     server = None
-    volume_control = None
 
     config = configparser.ConfigParser()
     config.optionxform = lambda option: option
@@ -313,7 +312,7 @@ def parse_config(debugmode=False):
     # Vollibrespot
     vlrctl = VollibspotifyControl()
     vlrctl.start()
-    mpris.register_nonmpris_player("spotify",vlrctl)
+    mpris.register_nonmpris_player(SPOTIFYNAME,vlrctl)
             
             
     # Other settings
