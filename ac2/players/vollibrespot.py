@@ -76,10 +76,15 @@ class VollibspotifyControl(PlayerControl):
             self.host="localhost"
             
         self.lastupdated=0
+        self.tokenupdated=0
+        self.token=None
+        self.access_token=None
             
     def start(self):
         self.listener = VollibspotifyMetadataListener(self)
         self.listener.start()
+        self.tokenrefresher = VollibspotifyTokenRefresher(self)
+        self.tokenrefresher.start()
     
     def get_supported_commands(self):
         return [CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_PLAY]   
@@ -118,6 +123,14 @@ class VollibspotifyControl(PlayerControl):
 
     def is_active(self):
         return True
+    
+    
+    def __del__(self):
+        """
+        Finish background threads
+        """
+        self.listener.finished=True
+        self.tokenrefresher.finished=True
     
     
     
@@ -162,11 +175,12 @@ class VollibspotifyMetadataListener(threading.Thread):
                 self.control.report_alive()
                 
                 
-            logging.error("processed %s",message)
+            logging.debug("processed %s",message)
                 
     def parse_message(self,message):
         try: 
             data = json.loads(message)
+            logging.debug(data)
             if "metadata" in data:
                 logging.error(data["metadata"])
                 md = Metadata()
@@ -179,6 +193,9 @@ class VollibspotifyMetadataListener(threading.Thread):
                 self.control.metadata.set_position(pos)
             elif "volume" in data:
                 logging.debug("ignoring volume data")
+            elif "token" in data:
+                logging.info("got access_token update")
+                self.control.access_token = data["token"]
             else:
                 logging.warn("don't know how to handle %s",data)
                 
@@ -193,3 +210,24 @@ class VollibspotifyMetadataListener(threading.Thread):
         # Use the last one for now which seems to be the highest resolution
         artworkid=artids[len(artids)-1]
         return "https://i.scdn.co/image/"+artworkid
+    
+    
+
+#
+# A thread that regularly sends token request
+#
+class VollibspotifyTokenRefresher(threading.Thread):
+    
+    def __init__(self, control):
+        threading.Thread.__init__(self)
+        self.control = control
+        self.finished=False
+        
+        
+    def run(self):
+        while (not self.finished):
+            self.control.send_command(VOLSPOTIFY_HEARTBEAT, mapping=False)
+            time.sleep(1)
+            self.control.send_command(VOLSPOTIFY_TOKEN, mapping=False)
+            logging.debug("sent token request")
+            time.sleep(1800)
