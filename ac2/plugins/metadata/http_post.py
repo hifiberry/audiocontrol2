@@ -79,7 +79,7 @@ class MetadataHTTPRequest(MetadataDisplay):
                 r = requests.post(self.url, 
                                   json=md_dict,
                                   timeout=10)
-                logging.error("posted metadata update to %s (%s)", 
+                logging.info("posted metadata update to %s (%s)", 
                              self.url,
                              md_dict)
             except Exception as e:
