@@ -104,7 +104,7 @@ class AudioController():
 
     def metadata_notify(self, metadata):
         if metadata.is_unknown() and metadata.playerState == "playing":
-            logging.error("Got empty metadata - what's wrong here? %s",
+            logging.warning("Metadata without artist, album or title - what's wrong here? %s",
                           metadata)
 
         for md in self.metadata_displays:

@@ -209,8 +209,9 @@ class Metadata:
         return "{}/{}".format(self.artist, self.title)
     
     def __str__(self):
-        return "{}: {} ({}) {}".format(self.artist, self.title,
-                                       self.albumTitle, self.artUrl)
+        return "[{}, {}] {}: {} ({}) {}".format(self.playerName, self.playerState,
+                                                self.artist, self.title,
+                                                self.albumTitle, self.artUrl)
 
 
 def enrich_metadata(metadata, callback=None):
