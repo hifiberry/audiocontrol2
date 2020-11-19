@@ -90,6 +90,9 @@ class MetadataPostgres(MetadataDisplay):
         self.currentmetadata = metadata
         self.starttimestamp = datetime.now()
 
+    def update_volume(self, volume):
+        pass
+
     def write_metadata(self, songdict):
         try:
             if songdict is None:
