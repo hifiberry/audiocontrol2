@@ -23,19 +23,18 @@ SOFTWARE.
 import threading
 import time
 import logging
-
+import alsaaudio
 
 class ALSAVolume(threading.Thread):
 
     def __init__(self, mixer_name):
-        import alsaaudio
 
         super().__init__()
 
         self.listeners = []
         self.volume = -1
         self.unmuted_volume = 0
-        self.pollinterval = 0.3
+        self.pollinterval = 0.2
         if self.pollinterval < 0.1:
             self.pollinterval = 0.1
 
@@ -48,8 +47,6 @@ class ALSAVolume(threading.Thread):
             self.mixer_name = None
 
     def set_volume(self, vol):
-        import alsaaudio
-
         # Check if this was a "mute" operation and store unmuted volume
         if vol == 0 and self.volume != 0:
             self.unmuted_volume = self.volume
@@ -102,8 +99,6 @@ class ALSAVolume(threading.Thread):
                                   e, listener)
 
     def current_volume(self):
-        import alsaaudio
-
         volumes = alsaaudio.Mixer(self.mixer_name).getvolume()
         channels = 0
         vol = 0
