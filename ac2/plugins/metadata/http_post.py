@@ -93,8 +93,9 @@ class MetadataHTTPRequest(MetadataDisplay):
             logging.error("got HTTP error %s when posting metadata to %s",
                           r.status_code,
                           self.url)
-            
-        
+
+    def update_volume(self, volume):
+        pass
 
     def __str__(self):
         return "http"

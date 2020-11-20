@@ -32,5 +32,8 @@ class MetadataConsole(MetadataDisplay):
     def notify(self, metadata):
         print("{:16s}: {}".format(metadata.playerName, metadata))
 
+    def update_volume(self, volume):
+        print(f"Volume changed to {volume}%")
+
     def __str__(self):
         return "console"
