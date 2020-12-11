@@ -80,6 +80,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/api/player/<command>',
                           method="POST",
                           callback=self.playercontrol_handler)
+        self.bottle.route('/api/player/<command>/<ignore>',
+                          method="POST",
+                          callback=self.playercontrol_ignore_handler)
         self.bottle.route('/api/track/metadata',
                           method="GET",
                           callback=self.metadata_handler)
@@ -114,6 +117,18 @@ class AudioControlWebserver(MetadataDisplay):
     def playercontrol_handler(self, command):
         try:
             if not(self.send_command(command)):
+                response.status = 500
+                return "{} failed".format(command)
+
+        except Exception as e:
+            response.status = 500
+            return "{} failed with exception {}".format(command, e)
+
+        return "ok"
+    
+    def playercontrol_ignore_handler(self, command, ignore):
+        try:
+            if not(self.send_command(command, ignore=ignore)):
                 response.status = 500
                 return "{} failed".format(command)
 
@@ -328,7 +343,7 @@ class AudioControlWebserver(MetadataDisplay):
         logging.info("trying to activate %s", playername)
         return self.player_control.activate_player(playername)
 
-    def send_command(self, command, params=None):
+    def send_command(self, command, ignore=None, params=None):
         if command == "love":
             return self.love_track(True)
 
@@ -359,18 +374,18 @@ class AudioControlWebserver(MetadataDisplay):
 
             try:
                 if command == "next":
-                    self.player_control.next()
+                    self.player_control.next(ignore=ignore)
                     self.send_metadata_update({"skipped": True})
                 elif command == "previous":
-                    self.player_control.previous()
+                    self.player_control.previous(ignore=ignore)
                 elif command == "play":
-                    self.player_control.playpause(pause=False)
+                    self.player_control.playpause(pause=False,ignore=ignore)
                 elif command == "pause":
-                    self.player_control.playpause(pause=True)
+                    self.player_control.playpause(pause=True,ignore=ignore)
                 elif command == "playpause":
-                    self.player_control.playpause(pause=None)
+                    self.player_control.playpause(pause=None,ignore=ignore)
                 elif command == "stop":
-                    self.player_control.stop()
+                    self.player_control.stop(ignore=ignore)
                 else:
                     logging.error("unknown command %s", command)
                     return False

@@ -455,7 +455,14 @@ class AudioController():
     def next(self):
         self.send_command(CMD_NEXT)
 
-    def playpause(self, pause=None):
+    def playpause(self, pause=None, ignore=None):
+        
+        if ignore is not None:
+            if self.active_player.lower() == ignore.lower():
+                logging.info("Got a playpquse request that should be ignored (%s)",
+                             ignore)
+                return
+        
         command = None
         if pause is None:
             if self.playing:
