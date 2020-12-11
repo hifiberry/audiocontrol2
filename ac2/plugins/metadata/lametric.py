@@ -89,7 +89,8 @@ class LaMetricPush(MetadataDisplay):
 
             post_data(url, json.dumps(data), headers=headers, verify=False)
         
-
+    def update_volume(self, volume):
+        pass
 
 class LaMetricDiscovery(Thread):
     

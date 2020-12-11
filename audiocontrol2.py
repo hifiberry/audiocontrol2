@@ -238,15 +238,14 @@ def parse_config(debugmode=False):
                 logging.error("Exception during controller %s initialization",
                               classname)
                 logging.exception(e)
-                
-    #  Additional metadata modules
-    for section in config.sections():
+
         if section.startswith("metadata:"):
             [_,classname] = section.split(":",1)
             try:
                 params = config[section]
-                mddisplay = create_object(classname, params)
-                mpris.register_metadata_display(mddisplay)
+                metadata_display = create_object(classname, params)
+                mpris.register_metadata_display(metadata_display)
+                volume_control.add_listener(metadata_display)
                 logging.info("registered metadata display %s", controller)
                 report_activate("audiocontrol_metadata_"+classname)
             except Exception as e:
