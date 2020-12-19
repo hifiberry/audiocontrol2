@@ -125,7 +125,8 @@ def parse_config(debugmode=False):
         port = config.getint("webserver",
                              "port",
                              fallback=80)
-        server = AudioControlWebserver(port=port, debug=debugmode)
+        token = config.get("webserver", "authtoken", fallback=None)
+        server = AudioControlWebserver(port=port, authtoken=token, debug=debugmode)
         mpris.register_metadata_display(server)
         server.set_player_control(mpris)
         server.add_updater(mpris)

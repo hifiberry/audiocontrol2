@@ -26,6 +26,7 @@ import json
 import copy
 import urllib.parse
 import pathlib
+import os
 
 from bottle import Bottle, static_file, request, response
 from expiringdict import ExpiringDict
@@ -35,19 +36,28 @@ from ac2.metadata import Metadata
 from ac2.plugins.metadata import MetadataDisplay
 
 
+class SystemControl():
+    def __init__(self):
+        pass
+
+    def poweroff(self):
+        return os.system('systemctl poweroff') == 0
 
 class AudioControlWebserver(MetadataDisplay):
 
     def __init__(self,
                  port=80,
                  host='0.0.0.0',
+                 authtoken=None,
                  debug=False):
         super().__init__()
         self.port = port
         self.host = host
         self.debug = debug
+        self.authtoken = authtoken
         self.bottle = Bottle()
         self.route()
+        self.system_control = SystemControl()
         self.player_control = None
         self.lastfm_network = None
         self.volume_control = None
@@ -60,6 +70,14 @@ class AudioControlWebserver(MetadataDisplay):
         self.notify(Metadata("Artist", "Title", "Album"))
 
         # Last.FM API to access additional track data
+
+    def validate_authtoken(self, request):
+        if self.authtoken is None:
+            return False
+
+        if "Authtoken" in request.headers and request.headers["Authtoken"] == self.authtoken:
+            return True
+        return False
 
     def route(self):
         self.bottle.route('/static/<filename>',
@@ -95,6 +113,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/api/volume',
                           method="POST",
                           callback=self.volume_post_handler)
+        self.bottle.route('/api/system/<command>',
+                          method="POST",
+                          callback=self.system_handler)
 
     def startServer(self):
         self.bottle.run(port=self.port,
@@ -174,6 +195,18 @@ class AudioControlWebserver(MetadataDisplay):
                 break
 
         return ({"playing": playing})
+
+    def system_handler(self, command):
+        if not self.validate_authtoken(request):
+            response.status = 403
+            return "Not authorized"
+
+        if command == "poweroff" and not self.system_control.poweroff():
+            response.status = 500
+            return "Could not poweroff"
+        else:
+            response.status = 501
+            return "Unknown command {}".format(command)
 
     def metadata_handler(self):
         print(self.metadata)
