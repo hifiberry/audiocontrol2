@@ -70,6 +70,21 @@ curl -X POST -H "Content-Type: application/json" -d '{"percent":"50"} http://127
 If the percent value starts with + or -, it will change the volume by this amount (e.g. "+1" will by
 [one louder](https://www.youtube.com/watch?v=_sRhuh8Aphc))
 
+## System
+```
+/api/system/poweroff
+```
+
+This endpoint is used to turnoff your device in a controlled maner using an authenticated (header `Authtoken`) HTTP POST request.
+
+This endpoint is only available if your `/etc/audiocontrol2.conf` includes a secret authorization token (`authtoken`):
+```
+[webserver]
+enable=yes
+port=81
+authtoken=hifiberry
+```
+
 ## Examples
 
 Note that these examples assume audiocontrol to listen on port 80. On HiFiBerryOS, audiocontrol is listening on port 81. Therefore, you will need to change the port number.
@@ -79,4 +94,5 @@ curl -X post http://127.0.0.1:80/api/player/previous
 curl -X post http://127.0.0.1:80/api/track/love
 curl http://127.0.0.1:80/api/track/metadata
 curl -X POST -H "Content-Type: application/json" -d '{"percent":"+5"} http://127.0.0.1:80/api/volume
+curl -X POST hifiberry.local:81/api/system/poweroff -H "Authtoken: hifiberry"
 ```
