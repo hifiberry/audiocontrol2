@@ -374,10 +374,10 @@ class AudioControlWebserver(MetadataDisplay):
 
             try:
                 if command == "next":
-                    self.player_control.next(ignore=ignore)
+                    self.player_control.next()
                     self.send_metadata_update({"skipped": True})
                 elif command == "previous":
-                    self.player_control.previous(ignore=ignore)
+                    self.player_control.previous()
                 elif command == "play":
                     self.player_control.playpause(pause=False,ignore=ignore)
                 elif command == "pause":
