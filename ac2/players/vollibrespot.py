@@ -197,7 +197,7 @@ class VollibspotifyMetadataListener(threading.Thread):
                 logging.info("got access_token update")
                 self.control.access_token = data["token"]
             else:
-                logging.warn("don't know how to handle %s",data)
+                logging.warning("don't know how to handle %s",data)
                 
         except Exception as e:
             logging.error("error while parsing %s (%s)", message,e)

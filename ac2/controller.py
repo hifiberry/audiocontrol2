@@ -112,7 +112,7 @@ class AudioController():
                 logging.debug("metadata_notify: %s %s", md, metadata)
                 md.notify_async(copy.copy(metadata))
             except Exception as e:
-                logging.warn("could not notify %s: %s", md, e)
+                logging.warning("could not notify %s: %s", md, e)
                 logging.exception(e)
 
         self.metadata = metadata
@@ -224,7 +224,7 @@ class AudioController():
         logging.debug("received metadata update: %s", updates)
 
         if self.metadata is None:
-            logging.warn("ooops, got an update, but don't have metadata")
+            logging.warning("ooops, got an update, but don't have metadata")
             return
 
         if self.metadata.songId() != songId:

@@ -247,7 +247,7 @@ def parse_config(debugmode=False):
                 metadata_display = create_object(classname, params)
                 mpris.register_metadata_display(metadata_display)
                 volume_control.add_listener(metadata_display)
-                logging.info("registered metadata display %s", controller)
+                logging.info("registered metadata display %s", metadata_display)
                 report_activate("audiocontrol_metadata_"+classname)
             except Exception as e:
                 logging.error("Exception during controller %s initialization",

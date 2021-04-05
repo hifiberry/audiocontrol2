@@ -35,7 +35,7 @@ class VolumeHTTPRequest():
         self.url = url
         pass
 
-    def update_volume(self, volume_percent):
+    def notify_volume(self, volume_percent):
 
         if (self.request_type == "json"):
             try:
