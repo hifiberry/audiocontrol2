@@ -18,6 +18,8 @@ SOFTWARE.
 '''
 from threading import Thread
 
+from ac2.constants import STATE_PLAYING, STATE_PAUSED, STATE_STOPPED, STATE_UNDEF
+
 
 class Controller( Thread ):
     '''
@@ -30,6 +32,7 @@ class Controller( Thread ):
         super().__init__()
         self.volumecontrol = None
         self.playercontrol = None
+        self.playerstate = STATE_UNDEF
         self.name = "generic controller"
 
     def set_volume_control( self, volumecontrol ):
@@ -37,6 +40,9 @@ class Controller( Thread ):
 
     def set_player_control( self, playercontrol ):
         self.playercontrol = playercontrol
+        
+    def update_playback_state(self, state):
+        self.playerstate = state
 
     def __str__(self):
         return self.name

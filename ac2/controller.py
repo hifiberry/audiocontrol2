@@ -82,6 +82,7 @@ class AudioController():
         self.metadata_lock = threading.Lock()
         self.volume_control = None
         self.metadata_processors = []
+        self.state_displays = []
         self.players={}
         self.mpris = MPRIS()
         self.mpris.connect_dbus()
@@ -95,6 +96,9 @@ class AudioController():
         
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
+
+    def register_state_display(self, statedisplay):
+        self.state_displays.append(statedisplay)
 
     def register_metadata_processor(self, mdproc):
         self.metadata_processors.append(mdproc)
@@ -123,7 +127,7 @@ class AudioController():
         Returns a list of MPRIS and non-MPRIS players
         """
         players=list(self.players.keys())+self.mpris.retrieve_players()
-        logging.info("players: %s",players)
+        logging.debug("players: %s",players)
         return players
         
 
@@ -429,6 +433,8 @@ class AudioController():
                               previous_state, state)
                 if not metadata_notified:
                     self.metadata_notify(md)
+                for sd in self.state_displays:
+                    sd.update_playback_state(state)
 
             previous_state = state
 

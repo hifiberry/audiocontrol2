@@ -232,6 +232,7 @@ def parse_config(debugmode=False):
                 controller = create_object(classname, params)
                 controller.set_player_control(mpris)
                 controller.set_volume_control(volume_control)
+                mpris.register_state_display(controller)
                 controller.start()
                 logging.info("started controller %s", controller)
                 report_activate("audiocontrol_controller_"+classname)
@@ -349,14 +350,20 @@ def parse_config(debugmode=False):
 
 def main():
 
+    verbose=False
     if len(sys.argv) > 1:
         if "-v" in sys.argv:
-            logging.basicConfig(format='%(levelname)s: %(module)s - %(message)s',
-                                level=logging.DEBUG)
-            logging.debug("enabled verbose logging")
+            verbose=True
+            
+    if verbose:
+        logging.basicConfig(format='%(levelname)s: %(module)s - %(message)s',
+                            level=logging.DEBUG)
+        logging.debug("enabled verbose logging")
     else:
         logging.basicConfig(format='%(levelname)s: %(module)s - %(message)s',
                             level=logging.INFO)
+        logging.info("INFO")
+        logging.error("ERROR")
 
     if ('DEBUG' in os.environ):
         logging.warning("starting in debug mode...")
