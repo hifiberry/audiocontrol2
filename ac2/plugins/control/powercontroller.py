@@ -43,6 +43,7 @@ REG_BUTTONMODE=0x05
 REG_BUTTONSTATE=0x06
 REG_POWEROFFTIMER=0x09
 REG_BUTTONPOWEROFFTIME=0x0a
+REG_INTERRUPTPIN=0x0e
 
 LEDMODE_STATIC=0
 LEDMODE_PULSING=1
@@ -50,9 +51,13 @@ LEDMODE_BLINK=2
 LEDMODE_FLASH=3
 LEDMODE_OFF=4
 
+# Use Pi's GPIO15 (RXD) as interrupt pin
+INTPIN=15
+INTPIN_FIRMWARE=2
+
 BUTTONMODE_SHORT_LONG_PRESS=0
 
-MIN_VERSION=3
+MIN_VERSION=4  # requires functionality to set interrupt pin that was introduced in v4
 
 
 def twos_comp(val, bits):
@@ -87,15 +92,20 @@ class Powercontroller(Controller):
                 logging.error("version %s is lower than minimal supported version %s, stopping", 
                               version, MIN_VERSION)
                 self.finished=True
+            else:
+                # TODO: report activation
+                pass
                 
         except Exception as e:
             logging.error("no powercontroller found, ignoring, %s",e)
             self.finished=True
+            
         self.init_controller()
         
     def init_controller(self):
         self.bus.write_byte_data(ADDRESS, REG_BUTTONPOWEROFFTIME, 20) # We deal with this directly
         self.bus.write_byte_data(ADDRESS, REG_BUTTONMODE, BUTTONMODE_SHORT_LONG_PRESS)
+        self.bus.write_byte_data(ADDRESS, REG_INTERRUPTPIN, INTPIN_FIRMWARE) # Set interrupt pin 
         self.update_playback_state(STATE_UNDEF)
             
 
@@ -146,7 +156,7 @@ class Powercontroller(Controller):
         
         while not(self.finished):
             
-            if self.gpio.wait_for_edge(4,pigpio.EITHER_EDGE,10):
+            if self.gpio.wait_for_edge(INTPIN,pigpio.EITHER_EDGE,10):
                 logging.info("Received interrupt")
                 
                 try:
