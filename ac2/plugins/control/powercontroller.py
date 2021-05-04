@@ -52,8 +52,12 @@ LEDMODE_FLASH=3
 LEDMODE_OFF=4
 
 # Use Pi's GPIO15 (RXD) as interrupt pin
-INTPIN=15
-INTPIN_FIRMWARE=2
+INTPINS = {
+    0: 0,
+    1: 4,
+    2: 15, 
+    3: 14
+    }
 
 BUTTONMODE_SHORT_LONG_PRESS=0
 
@@ -79,9 +83,23 @@ class Powercontroller(Controller):
         self.bus=SMBus(1)
         self.gpio = pigpio.pi()
         self.stepsize=2
+        self.intpin=0
+        self.intpinpi=0
         
         if params is None:
             params={}
+            
+        try:
+            self.intpin = int(params.get("intpin","1"), base=10)
+            if self.intpin==0:
+                self.intpin=1
+                
+            self.intpinpi=INTPINS[self.intpin]
+            logging.info("Using controller int pin %s on GPIO %s",self.intpin, self.intpinpi)
+        except Exception as e:
+            logging.error("can't read intpin, won't start powercontroller plugin (%s)", e)
+            self.finished=True
+            
         
         try:
             vl = self.bus.read_byte_data(ADDRESS, REG_VL)
@@ -105,7 +123,7 @@ class Powercontroller(Controller):
     def init_controller(self):
         self.bus.write_byte_data(ADDRESS, REG_BUTTONPOWEROFFTIME, 20) # We deal with this directly
         self.bus.write_byte_data(ADDRESS, REG_BUTTONMODE, BUTTONMODE_SHORT_LONG_PRESS)
-        self.bus.write_byte_data(ADDRESS, REG_INTERRUPTPIN, INTPIN_FIRMWARE) # Set interrupt pin 
+        self.bus.write_byte_data(ADDRESS, REG_INTERRUPTPIN, self.intpin) # Set interrupt pin 
         self.update_playback_state(STATE_UNDEF)
             
 
@@ -156,7 +174,7 @@ class Powercontroller(Controller):
         
         while not(self.finished):
             
-            if self.gpio.wait_for_edge(INTPIN,pigpio.EITHER_EDGE,10):
+            if self.gpio.wait_for_edge(self.intpinpi,pigpio.EITHER_EDGE,10):
                 logging.info("Received interrupt")
                 
                 try:
@@ -168,9 +186,11 @@ class Powercontroller(Controller):
                         
                     if button_state == 1:
                         # short pressure_network
+                        self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
                         self.playpause()
                     elif button_state == 2:
                         # Long press
+                        self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
                         self.shutdown();
                 
                     logging.info("Received interrupt (rotary_change=%s, button_state=%s",
