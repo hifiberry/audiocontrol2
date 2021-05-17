@@ -162,6 +162,8 @@ class VollibspotifyMetadataListener(threading.Thread):
                 self.control.set_state(STATE_PAUSED)
             elif message=="kSpSinkInactive":
                 self.control.set_state(STATE_PAUSED)
+            elif message == 'kSpDeviceInactive':
+                self.control.set_state(STATE_STOPPED)
             elif message in ["kSpSinkActive","kSpPlaybackActive"]: 
                 self.control.set_state(STATE_PLAYING)
             elif message[0]=='{':
@@ -196,6 +198,13 @@ class VollibspotifyMetadataListener(threading.Thread):
             elif "token" in data:
                 logging.info("got access_token update")
                 self.control.access_token = data["token"]
+            elif 'state' in data:
+                state = data['state'].get('status')
+                logging.info("got a state change")
+                if state == 'pause':
+                    self.control.set_state(STATE_PAUSED)
+                elif state == 'play':
+                    self.control.set_state(STATE_PLAYING)
             else:
                 logging.warning("don't know how to handle %s",data)
                 
