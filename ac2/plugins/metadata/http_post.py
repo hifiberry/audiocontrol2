@@ -94,7 +94,7 @@ class MetadataHTTPRequest(MetadataDisplay):
                           r.status_code,
                           self.url)
 
-    def update_volume(self, volume):
+    def notify_volume(self, volume):
         pass
 
     def __str__(self):

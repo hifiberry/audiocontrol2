@@ -324,7 +324,7 @@ class AudioControlWebserver(MetadataDisplay):
                 metadata.artUrl = "artwork/" + key
                 self.artwork[key]=localfile
             else:
-                logging.warn("artwork file %s does not exist, removing artUrl (%s)",
+                logging.warning("artwork file %s does not exist, removing artUrl (%s)",
                              localfile,
                              metadata.artUrl)
                 metadata.artUrl=None
@@ -339,7 +339,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.metadata = metadata
                
 
-    def update_volume(self, vol):
+    def notify_volume(self, vol):
         self.volume = vol
 
     def send_metadata_update(self, updates, song_id = None):
@@ -350,7 +350,7 @@ class AudioControlWebserver(MetadataDisplay):
                 logging.debug("sending update %s to %s", u, updates)
                 u.update_metadata_attributes(updates, song_id)
             except Exception as e:
-                logging.warn("couldn't send update to %s: %s", u, e)
+                logging.warning("couldn't send update to %s: %s", u, e)
 
     # ##
     # ## end metadata functions
@@ -438,7 +438,7 @@ class AudioControlWebserver(MetadataDisplay):
                 lover.love(love)
             except Exception as e:
                 ok = False
-                logging.warn("Could not love/unlove via %s: %s", lover, e)
+                logging.warning("Could not love/unlove via %s: %s", lover, e)
 
         if ok:
             self.send_metadata_update({"loved": love})
