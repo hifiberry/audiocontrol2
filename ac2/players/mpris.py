@@ -116,6 +116,14 @@ class MPRIS():
             logging.error("exception %s while sending MPRIS command %s to %s",
                           e, command, playername)
             return False
+        
+    def playername(self, name):
+        if name is None:
+            return
+        if (name.startswith(MPRIS_PREFIX)):
+            return name[len(MPRIS_PREFIX):]
+        else:
+            return name
     
     
     def get_meta(self, name):
