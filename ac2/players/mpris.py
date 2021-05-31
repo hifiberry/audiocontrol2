@@ -67,7 +67,7 @@ class MPRIS():
                                     "PlaybackStatus")
             return state
         except Exception as e:
-            logging.warn("got exception %s while polling MPRIS data", e)
+            logging.warning("got exception %s while polling MPRIS data", e)
             
             
     
@@ -88,7 +88,7 @@ class MPRIS():
                 if supported:
                     supported_commands.append(command)
         except Exception as e:
-            logging.warn("got exception %s", e)
+            logging.warning("got exception %s", e)
 
         return supported_commands
     

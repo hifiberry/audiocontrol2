@@ -152,7 +152,7 @@ class LastFMScrobbler(MetadataDisplay):
         else:
             logging.info("no track data, not scrobbling %s", lastsong_md)
             
-    def update_volume(self, volume):
+    def notify_volume(self, volume):
         pass
 
     def __str__(self):

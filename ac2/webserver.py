@@ -40,6 +40,31 @@ class SystemControl():
     def __init__(self):
         pass
 
+    def version(self):
+        """Extract Hifiberry OS version."""
+        version = "00000000"
+        try:
+            with open('/etc/hifiberry.version') as version:
+                for line in version:
+                    version = line.rstrip()
+        except Exception:
+            version = "ERROR000"
+
+        return version
+
+    def getserial(self):
+        """Extract serial from cpuinfo file."""
+        cpuserial = "0000000000000000"
+        try:
+            with open('/proc/cpuinfo','r') as cpuinfo:
+                for line in cpuinfo:
+                    if line.startswith('Serial'):
+                        cpuserial = line[10:].rstrip()
+        except Exception:
+            cpuserial = "ERROR000000000"
+
+        return cpuserial
+
     def poweroff(self):
         return os.system('systemctl poweroff') == 0
 
@@ -113,6 +138,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/api/volume',
                           method="POST",
                           callback=self.volume_post_handler)
+        self.bottle.route('/api/system/info',
+                          method="GET",
+                          callback=self.system_info_handler)
         self.bottle.route('/api/system/<command>',
                           method="POST",
                           callback=self.system_handler)
@@ -207,6 +235,12 @@ class AudioControlWebserver(MetadataDisplay):
         else:
             response.status = 501
             return "Unknown command {}".format(command)
+
+    def system_info_handler(self):
+        return json.dumps({
+            "hifiberry OS": self.system_control.version(),
+            "rpi serial": self.system_control.getserial()
+        })
 
     def metadata_handler(self):
         print(self.metadata)
@@ -324,7 +358,7 @@ class AudioControlWebserver(MetadataDisplay):
                 metadata.artUrl = "artwork/" + key
                 self.artwork[key]=localfile
             else:
-                logging.warn("artwork file %s does not exist, removing artUrl (%s)",
+                logging.warning("artwork file %s does not exist, removing artUrl (%s)",
                              localfile,
                              metadata.artUrl)
                 metadata.artUrl=None
@@ -339,7 +373,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.metadata = metadata
                
 
-    def update_volume(self, vol):
+    def notify_volume(self, vol):
         self.volume = vol
 
     def send_metadata_update(self, updates, song_id = None):
@@ -350,7 +384,7 @@ class AudioControlWebserver(MetadataDisplay):
                 logging.debug("sending update %s to %s", u, updates)
                 u.update_metadata_attributes(updates, song_id)
             except Exception as e:
-                logging.warn("couldn't send update to %s: %s", u, e)
+                logging.warning("couldn't send update to %s: %s", u, e)
 
     # ##
     # ## end metadata functions
@@ -438,7 +472,7 @@ class AudioControlWebserver(MetadataDisplay):
                 lover.love(love)
             except Exception as e:
                 ok = False
-                logging.warn("Could not love/unlove via %s: %s", lover, e)
+                logging.warning("Could not love/unlove via %s: %s", lover, e)
 
         if ok:
             self.send_metadata_update({"loved": love})

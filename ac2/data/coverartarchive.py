@@ -41,7 +41,7 @@ def coverartarchive_cover(mbid):
         return url
 
     except Exception as e:
-        logging.warn("can't load cover for %s: %s", mbid, e)
+        logging.warning("can't load cover for %s: %s", mbid, e)
 
 
 def coverdata(mbid):

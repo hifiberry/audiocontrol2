@@ -48,7 +48,7 @@ def guess_stream_order(stream, field1, field2, use_cloud=True):
         caching_supported = True
     else:
         caching_supported = False
-        logging.warn("not a web radio stream, won't use caching")
+        logging.warning("not a web radio stream, won't use caching")
     
     stats = stream_stats.get(stream,{"ta": 0, "at": 0, "order": ORDER_UNKNOWN, "cloud": ORDER_UNKNOWN})
     

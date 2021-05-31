@@ -78,24 +78,24 @@ class ALSAVolume(threading.Thread):
 
     def run(self):
         while True:
-            self.update_volume()
+            self.notify_listeners()
             time.sleep(self.pollinterval)
 
-    def update_volume(self, always_notify=False):
-        vol = self.current_volume()
+    def notify_listeners(self, always_notify=False):
+        current_vol = self.current_volume()
 
         # Check if this was a "mute" operation and store unmuted volume
-        if vol == 0 and self.volume != 0:
+        if current_vol == 0 and self.volume != 0:
             self.unmuted_volume = self.volume
 
-        if always_notify or (vol != self.volume):
-            logging.debug("ALSA volume changed to {}".format(vol))
-            self.volume = vol
+        if always_notify or (current_vol != self.volume):
+            logging.debug("ALSA volume changed to {}".format(current_vol))
+            self.volume = current_vol
             for listener in self.listeners:
                 try:
-                    listener.update_volume(vol)
+                    listener.notify_volume(current_vol)
                 except Exception as e:
-                    logging.debug("exception %s during %s.volume_changed_percent",
+                    logging.debug("exception %s during %s.notify_volume",
                                   e, listener)
 
     def current_volume(self):

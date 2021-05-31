@@ -60,7 +60,7 @@ def hifiberry_cover(song_mbid, album_mbid, artist_mbid, player="unknown"):
             return (None, 0, 0)
             
     except Exception as e:
-        logging.warn("can't load cover for %s: %s", song_mbid, e)
+        logging.warning("can't load cover for %s: %s", song_mbid, e)
         logging.exception(e)
         return (None, 0, 0)
     
