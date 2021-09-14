@@ -23,7 +23,7 @@ import os
 from typing import Dict
 
 from smbus import SMBus
-import pigpio
+import RPi.GPIO as GPIO
 
 from ac2.constants import STATE_PLAYING, STATE_UNDEF
 from ac2.plugins.control.controller import Controller
@@ -81,10 +81,13 @@ class Powercontroller(Controller):
         self.name = "powercontroller"
         self.finished=False
         self.bus=SMBus(1)
-        self.gpio = pigpio.pi()
         self.stepsize=2
         self.intpin=0
         self.intpinpi=0
+        
+        # configure GPIO
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup((4,14,15), GPIO.IN)
         
         if params is None:
             params={}
@@ -174,7 +177,7 @@ class Powercontroller(Controller):
         
         while not(self.finished):
             
-            if self.gpio.wait_for_edge(self.intpinpi,pigpio.EITHER_EDGE,10):
+            if GPIO.wait_for_edge(self.intpinpi,GPIO.BOTH,timeout=2000):
                 logging.info("Received interrupt")
                 
                 try:
