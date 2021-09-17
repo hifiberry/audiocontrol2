@@ -177,7 +177,14 @@ class Powercontroller(Controller):
         
         while not(self.finished):
             
-            if GPIO.wait_for_edge(self.intpinpi,GPIO.BOTH,timeout=2000):
+            try:
+                GPIO.wait_for_edge(self.intpinpi,GPIO.BOTH)
+                interrupt=True
+            except:
+                interrupt=False
+                
+            if interrupt:
+                
                 logging.info("Received interrupt")
                 
                 try:
