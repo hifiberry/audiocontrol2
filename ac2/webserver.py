@@ -66,7 +66,8 @@ class SystemControl():
         return cpuserial
 
     def poweroff(self):
-        return os.system('systemctl poweroff') == 0
+        t = threading.Timer(1.0, lambda: os.system('systemctl poweroff'))
+        t.start()
 
 class AudioControlWebserver(MetadataDisplay):
 
@@ -229,9 +230,10 @@ class AudioControlWebserver(MetadataDisplay):
             response.status = 403
             return "Not authorized"
 
-        if command == "poweroff" and not self.system_control.poweroff():
-            response.status = 500
-            return "Could not poweroff"
+        if command == "poweroff":
+            self.system_control.poweroff()
+            response.status = 200
+            return "poweroff"
         else:
             response.status = 501
             return "Unknown command {}".format(command)
