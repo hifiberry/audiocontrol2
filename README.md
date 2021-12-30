@@ -9,3 +9,7 @@ any project of your choice.
 To work well, all local players should support MPRIS.
 
 The latest version now allows Non-MPRIS players. However, for these players interfaces must be developed individually.
+
+# Prerequisites
+* libasound2-dev
+* libglib2.0-dev

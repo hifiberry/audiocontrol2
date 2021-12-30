@@ -34,13 +34,13 @@ import os
 import sys
 import threading
 
+from ac2.webserver import AudioControlWebserver
 from usagecollector.client import report_activate
 
 from ac2.controller import AudioController
 import ac2.data.lastfm as lastfmdata
 
 from ac2.plugins.metadata.lastfm import LastFMScrobbler
-from ac2.webserver import AudioControlWebserver
 from ac2.alsavolume import ALSAVolume
 from ac2.metadata import Metadata
 import ac2.metadata
@@ -48,7 +48,7 @@ from ac2.data.mpd import MpdMetadataProcessor
 from ac2.players.mpdcontrol import MPDControl
 from ac2.players.vollibrespot import VollibspotifyControl
 from ac2.players.vollibrespot import MYNAME as SPOTIFYNAME
-
+from ac2.socketio import SocketioAPI
 
 from ac2 import watchdog
 
@@ -130,6 +130,9 @@ def parse_config(debugmode=False):
         mpris.register_metadata_display(server)
         server.set_player_control(mpris)
         server.add_updater(mpris)
+        if config.get("webserver", "socketio_enabled", fallback=False):
+            init_socketio_api(server)
+
         server.start()
         watchdog.add_monitored_thread(server, "webserver")
         report_activate("audiocontrol_webserver")
@@ -209,7 +212,7 @@ def parse_config(debugmode=False):
 
             if server is not None:
                 volume_control.add_listener(server)
-                server.volume_control = volume_control
+                server.set_volume_control(volume_control)
 
             volume_control.start()
             watchdog.add_monitored_thread(volume_control, "volume control")
@@ -346,6 +349,11 @@ def parse_config(debugmode=False):
         from ac2.dev.dummydata import DummyMetadataCreator
         dummy = DummyMetadataCreator(server, interval=3)
         dummy.start()
+
+def init_socketio_api(webserver):
+    socketio_api = SocketioAPI(webserver.bottle, mpris)
+    webserver.socketio_api = socketio_api
+    mpris.register_metadata_display(socketio_api.metadata_handler)
 
 
 def main():

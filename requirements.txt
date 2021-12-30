@@ -2,7 +2,13 @@ pyalsaaudio
 musicbrainzngs
 expiringdict
 netifaces
-git+https://github.com/hifiberry/usagecollector@master
+# git+https://github.com/hifiberry/usagecollector@master
 python-Levenshtein
 musicbrainzngs
 python-mpd2
+requests
+dbus-python
+pylast
+python-socketio
+gevent
+gevent-websocket
