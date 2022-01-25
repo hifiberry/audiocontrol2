@@ -23,7 +23,7 @@ List of all players with their current status can be retrieved by a GET to
 
 ## Activate another player
 ```
-/api/player/active/<playername>
+/api/player/activate/<playername>
 ```
 
 This will start music playback on the given player. Note that this will just send a
