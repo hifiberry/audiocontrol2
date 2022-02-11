@@ -19,22 +19,25 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
+from gevent import monkey; monkey.patch_all()
+from geventwebsocket.handler import WebSocketHandler
 
-import logging
-import threading
-import json
 import copy
-import urllib.parse
-import pathlib
+import json
+import logging
 import os
+import pathlib
+import threading
+import urllib.parse
 
-from bottle import Bottle, static_file, request, response
+import socketio
+
+from bottle import Bottle, request, response, run, static_file
 from expiringdict import ExpiringDict
-
 
 from ac2.metadata import Metadata
 from ac2.plugins.metadata import MetadataDisplay
-
+from ac2.socketio import sio
 
 class SystemControl():
     def __init__(self):
@@ -92,6 +95,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.lovers = []
         self.updaters = []
         self.artwork = ExpiringDict(max_len=100, max_age_seconds=36000000)
+        self.socketio_api = None
 
         self.notify(Metadata("Artist", "Title", "Album"))
 
@@ -147,9 +151,20 @@ class AudioControlWebserver(MetadataDisplay):
                           callback=self.system_handler)
 
     def startServer(self):
-        self.bottle.run(port=self.port,
-                        host=self.host,
-                        debug=self.debug)
+        if self.socketio_api is None:
+            self.bottle.run(port=self.port,
+                            host=self.host,
+                            debug=self.debug,
+                            )
+        else:
+            run(self.socketio_api.app,
+                host=self.host,
+                port=self.port,
+                debug=self.debug,
+                server="gevent",
+                handler_class=WebSocketHandler
+                )
+
 
     # A "lover" is an object that can "love" or "unlove" a song.
     def add_lover(self, lover):
@@ -325,6 +340,8 @@ class AudioControlWebserver(MetadataDisplay):
         self.thread.daemon = True
         self.thread.start()
         logging.info("started web server on port {}".format(self.port))
+        if self.socketio_api:
+            logging.info("started socketio_api on port {}".format(self.port))
 
     def is_alive(self):
         if self.thread is None:
@@ -373,7 +390,6 @@ class AudioControlWebserver(MetadataDisplay):
         # Create a copy, because we might need to modify the artUrl
         metadata = copy.copy(metadata)
         self.metadata = metadata
-               
 
     def notify_volume(self, vol):
         self.volume = vol
@@ -398,6 +414,8 @@ class AudioControlWebserver(MetadataDisplay):
 
     def set_volume_control(self, volumecontrol):
         self.volume_control = volumecontrol
+        if self.socketio_api:
+            volumecontrol.add_listener(self.socketio_api.volume_handler)
 
     def set_player_control(self, playercontrol):
         self.player_control = playercontrol
