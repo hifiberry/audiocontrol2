@@ -370,8 +370,6 @@ def main():
     else:
         logging.basicConfig(format='%(levelname)s: %(module)s - %(message)s',
                             level=logging.INFO)
-        logging.info("INFO")
-        logging.error("ERROR")
 
     if ('DEBUG' in os.environ):
         logging.warning("starting in debug mode...")
