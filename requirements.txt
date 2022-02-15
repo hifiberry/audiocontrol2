@@ -12,3 +12,4 @@ pylast
 python-socketio
 gevent
 gevent-websocket
+pynput
