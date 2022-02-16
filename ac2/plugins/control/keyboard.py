@@ -56,9 +56,8 @@ class Keyboard(Controller):
             for i in params:
                 self.codetable[int(params[i])] = i
 
-        import keyboard
         try:
-            keyboard.on_press(self.keyboard_hook)
+            # keyboard.on_press(self.keyboard_hook)
             logging.debug("keyboard listener started")
         except:
             logging.error("could not start Keyboard listener, "
