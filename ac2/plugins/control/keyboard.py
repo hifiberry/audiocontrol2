@@ -17,13 +17,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
+import asyncio
 import logging
-from typing import Dict
 
+from typing import Dict
 from usagecollector.client import report_usage
 
 from ac2.plugins.control.controller import Controller
-
+from evdev import InputDevice, ecodes, list_devices
 
 class Keyboard(Controller):
 
@@ -56,73 +57,79 @@ class Keyboard(Controller):
             for i in params:
                 self.codetable[int(params[i])] = i
 
+    def handle_key_event(self, event):
+        command = self.codetable.get(event.code)
         try:
-            # keyboard.on_press(self.keyboard_hook)
-            logging.debug("keyboard listener started")
+            command_run = False
+            if command == "volume_up":
+                if self.volumecontrol is not None:
+                    self.volumecontrol.change_volume_percent(5)
+                    command_run =True
+                else:
+                    logging.info("ignoring %s, no volume control",
+                                    command)
+
+            elif command == "volume_down":
+                if self.volumecontrol is not None:
+                    self.volumecontrol.change_volume_percent(-5)
+                    command_run =True
+                else:
+                    logging.info("ignoring %s, no volume control",
+                                    command)
+
+            elif command == "previous":
+                if self.playercontrol is not None:
+                    self.playercontrol.previous()
+                    command_run =True
+                else:
+                    logging.info("ignoring %s, no playback control",
+                                    command)
+
+            elif command == "next":
+                if self.playercontrol is not None:
+                    self.playercontrol.next()
+                    command_run =True
+                else:
+                    logging.info("ignoring %s, no playback control",
+                                    command)
+
+            elif command == "playpause":
+                if self.playercontrol is not None:
+                    self.playercontrol.playpause()
+
+
+                    command_run =True
+                else:
+                    logging.info("ignoring %s, no playback control",
+                                    command)
+
+            if command_run:
+                report_usage("audiocontrol_keyboard_key", 1)
+
+            logging.debug("processed %s", command)
+
+        except Exception as e:
+            logging.warning("problem handling %s (%s)", command, e)
+
+    def run(self):
+        try:
+            asyncio.run(self.bind_devices())
         except:
             logging.error("could not start Keyboard listener, "
                            "no keyboard detected or no permissions")
 
-    def keyboard_hook(self, e):
-        import keyboard
+    async def bind_devices(self):
+        await asyncio.gather(*[self.listen(keyboard) for keyboard in self.get_keyboards()])
 
-        if e.event_type == keyboard.KEY_DOWN:
-            try:
-                command = self.codetable[e.scan_code]
-            except:
-                logging.error("%s unknown", e.scan_code)
-                return
+    async def listen(self, dev):
+        logging.info(f"keyboard listener started for {dev.name}")
+        async for event in dev.async_read_loop():
+            if event.type == ecodes.EV_KEY and event.value == 1:
+                self.handle_key_event(event)
 
-            try:
-                command_run = False
-                if command == "volume_up":
-                    if self.volumecontrol is not None:
-                        self.volumecontrol.change_volume_percent(5)
-                        command_run =True
-                    else:
-                        logging.info("ignoring %s, no volume control",
-                                     command)
-
-                elif command == "volume_down":
-                    if self.volumecontrol is not None:
-                        self.volumecontrol.change_volume_percent(-5)
-                        command_run =True
-                    else:
-                        logging.info("ignoring %s, no volume control",
-                                     command)
-
-                elif command == "previous":
-                    if self.playercontrol is not None:
-                        self.playercontrol.previous()
-                        command_run =True
-                    else:
-                        logging.info("ignoring %s, no playback control",
-                                     command)
-
-                elif command == "next":
-                    if self.playercontrol is not None:
-                        self.playercontrol.next()
-                        command_run =True
-                    else:
-                        logging.info("ignoring %s, no playback control",
-                                     command)
-
-                elif command == "playpause":
-                    if self.playercontrol is not None:
-                        self.playercontrol.playpause()
-                        command_run =True
-                    else:
-                        logging.info("ignoring %s, no playback control",
-                                     command)
-
-                if command_run:
-                    report_usage("audiocontrol_keyboard_key", 1)
-
-                logging.debug("processed %s", command)
-
-            except Exception as e:
-                logging.warning("problem handling %s (%s)", command, e)
-
-    def run(self):
-        import keyboard
-        keyboard.wait()
+    def get_keyboards(self):
+        devices = [InputDevice(path) for path in list_devices()]
+        for device in devices:
+            if 1 in device.capabilities():
+                if any(x in self.codetable.keys() for x in device.capabilities()[1]):
+                    yield device
