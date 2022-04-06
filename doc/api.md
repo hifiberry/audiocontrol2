@@ -70,6 +70,18 @@ curl -X POST -H "Content-Type: application/json" -d '{"percent":"50"}' http://12
 If the percent value starts with + or -, it will change the volume by this amount (e.g. "+1" will by
 [one louder](https://www.youtube.com/watch?v=_sRhuh8Aphc))
 
+To mute/unmute the volume or toggle the mute state use POST requests to
+ 
+```
+/api/volume/mute
+/api/volume/unmute
+/api/volume/togglemute
+```
+
+```
+curl -X POST http://127.0.0.1:80/api/volume/togglemute
+```
+
 ## System
 ```
 /api/system/poweroff

@@ -143,6 +143,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/api/volume',
                           method="POST",
                           callback=self.volume_post_handler)
+        self.bottle.route('/api/volume/<command>',
+                          method="POST",
+                          callback=self.volume_mute_handler)
         self.bottle.route('/api/system/info',
                           method="GET",
                           callback=self.system_info_handler)
@@ -304,6 +307,25 @@ class AudioControlWebserver(MetadataDisplay):
             response.status = 401
             return "percent value missing"
 
+        return ({"percent":self.volume_control.current_volume()})
+
+    def volume_mute_handler(self, command):
+
+        if self.volume_control is None:
+            response.status = 501
+            return "no volume control available"
+
+        if command == "mute":
+            self.volume_control.set_mute(True)
+        elif command == "unmute":
+            self.volume_control.set_mute(False)
+        elif command == "togglemute":
+            self.volume_control.toggle_mute()
+        else:
+            response.status = 501
+            return "Unknown command {}".format(command)
+
+        response.status = 200
         return ({"percent":self.volume_control.current_volume()})
 
     def status_handler(self):
