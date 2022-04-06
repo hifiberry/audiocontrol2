@@ -39,7 +39,7 @@ class Keyboard(Controller):
             self.codetable = {
                 # volume up
                 115: "volume_up",
-                 # volume down
+                # volume down
                 114: "volume_down",
                 # mute
                 113: "mute",
