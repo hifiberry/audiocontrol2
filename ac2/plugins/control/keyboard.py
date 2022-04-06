@@ -41,6 +41,8 @@ class Keyboard(Controller):
                 115: "volume_up",
                  # volume down
                 114: "volume_down",
+                # mute
+                113: "mute",
                 # right
                 106: "next",
                 # left
@@ -72,6 +74,14 @@ class Keyboard(Controller):
             elif command == "volume_down":
                 if self.volumecontrol is not None:
                     self.volumecontrol.change_volume_percent(-5)
+                    command_run =True
+                else:
+                    logging.info("ignoring %s, no volume control",
+                                    command)
+
+            elif command == "mute":
+                if self.volumecontrol is not None:
+                    self.volumecontrol.toggle_mute()
                     command_run =True
                 else:
                     logging.info("ignoring %s, no volume control",
