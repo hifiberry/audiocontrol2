@@ -57,7 +57,7 @@ class Keyboard(Controller):
         else:
             self.codetable = {}
             for i in params:
-                self.codetable[int(params[i])] = i
+                self.codetable[int(i)] = params[i]
 
     def handle_key_event(self, event):
         command = self.codetable.get(event.code)
