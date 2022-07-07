@@ -89,10 +89,10 @@ authtoken=hifiberry
 
 Note that these examples assume audiocontrol to listen on port 80. On HiFiBerryOS, audiocontrol is listening on port 81. Therefore, you will need to change the port number.
 
-```
+```console
 curl -X post http://127.0.0.1:80/api/player/previous
 curl -X post http://127.0.0.1:80/api/track/love
 curl http://127.0.0.1:80/api/track/metadata
-curl -X POST -H "Content-Type: application/json" -d '{"percent":"+5"} http://127.0.0.1:80/api/volume
+curl -X POST -H "Content-Type: application/json" -d '{"percent":"+5"}' http://127.0.0.1:80/api/volume
 curl -X POST hifiberry.local:81/api/system/poweroff -H "Authtoken: hifiberry"
 ```
