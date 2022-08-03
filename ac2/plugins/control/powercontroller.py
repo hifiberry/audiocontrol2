@@ -29,46 +29,46 @@ from ac2.constants import STATE_PLAYING, STATE_UNDEF
 from ac2.plugins.control.controller import Controller
 from usagecollector.client import report_usage
 
+ADDRESS = 0x77
 
-ADDRESS=0x77
+REG_VL = 0xfd
+REG_VH = 0xfe
+REG_ROTARYCHANGE = 0x0c
+REG_LEDMODE = 0x01
+REG_LEDR = 0x02
+REG_LEDG = 0x03
+REG_LEDB = 0x04
+REG_BUTTONMODE = 0x05
+REG_BUTTONSTATE = 0x06
+REG_POWEROFFTIMER = 0x09
+REG_BUTTONPOWEROFFTIME = 0x0a
+REG_INTERRUPTPIN = 0x0e
 
-REG_VL=0xfd
-REG_VH=0xfe
-REG_ROTARYCHANGE=0x0c
-REG_LEDMODE=0x01
-REG_LEDR=0x02
-REG_LEDG=0x03
-REG_LEDB=0x04
-REG_BUTTONMODE=0x05
-REG_BUTTONSTATE=0x06
-REG_POWEROFFTIMER=0x09
-REG_BUTTONPOWEROFFTIME=0x0a
-REG_INTERRUPTPIN=0x0e
-
-LEDMODE_STATIC=0
-LEDMODE_PULSING=1
-LEDMODE_BLINK=2
-LEDMODE_FLASH=3
-LEDMODE_OFF=4
+LEDMODE_STATIC = 0
+LEDMODE_PULSING = 1
+LEDMODE_BLINK = 2
+LEDMODE_FLASH = 3
+LEDMODE_OFF = 4
 
 # Use Pi's GPIO15 (RXD) as interrupt pin
 INTPINS = {
     0: 0,
     1: 4,
-    2: 15, 
+    2: 15,
     3: 14
     }
 
-BUTTONMODE_SHORT_LONG_PRESS=0
+BUTTONMODE_SHORT_LONG_PRESS = 0
 
-MIN_VERSION=4  # requires functionality to set interrupt pin that was introduced in v4
+MIN_VERSION = 4  # requires functionality to set interrupt pin that was introduced in v4
 
 
 def twos_comp(val, bits):
     """compute the 2's complement of int value val"""
-    if (val & (1 << (bits - 1))) != 0: # if sign bit is set e.g., 8bit: 128-255
-        val = val - (1 << bits)        # compute negative value
-    return val                         # return positive value as is
+    if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
+        val = val - (1 << bits)  # compute negative value
+    return val  # return positive value as is
+
 
 class Powercontroller(Controller):
     """
@@ -77,60 +77,58 @@ class Powercontroller(Controller):
 
     def __init__(self, params: Dict[str, str]=None):
         super().__init__()
-                
+
         self.name = "powercontroller"
-        self.finished=False
-        self.bus=SMBus(1)
-        self.stepsize=2
-        self.intpin=0
-        self.intpinpi=0
-        
+        self.finished = False
+        self.bus = SMBus(1)
+        self.stepsize = 2
+        self.intpin = 0
+        self.intpinpi = 0
+
         # configure GPIO
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup((4,14,15), GPIO.IN)
-        
+        GPIO.setup((4, 14, 15), GPIO.IN)
+
         if params is None:
-            params={}
-            
+            params = {}
+
         try:
-            self.intpin = int(params.get("intpin","1"), base=10)
-            if self.intpin==0:
-                self.intpin=1
-                
-            self.intpinpi=INTPINS[self.intpin]
-            logging.info("Using controller int pin %s on GPIO %s",self.intpin, self.intpinpi)
+            self.intpin = int(params.get("intpin", "1"), base=10)
+            if self.intpin == 0:
+                self.intpin = 1
+
+            self.intpinpi = INTPINS[self.intpin]
+            logging.info("Using controller int pin %s on GPIO %s", self.intpin, self.intpinpi)
         except Exception as e:
             logging.error("can't read intpin, won't start powercontroller plugin (%s)", e)
-            self.finished=True
-            
-        
+            self.finished = True
+
         try:
             vl = self.bus.read_byte_data(ADDRESS, REG_VL)
             vh = self.bus.read_byte_data(ADDRESS, REG_VH)
-            version=256*vh+vl
+            version = 256 * vh + vl
             logging.info("found powercontroller software version %s on I2C address %s", version, ADDRESS)
-            if version<MIN_VERSION:
-                logging.error("version %s is lower than minimal supported version %s, stopping", 
+            if version < MIN_VERSION:
+                logging.error("version %s is lower than minimal supported version %s, stopping",
                               version, MIN_VERSION)
-                self.finished=True
+                self.finished = True
             else:
                 # TODO: report activation
                 pass
-                
-        except Exception as e:
-            logging.error("no powercontroller found, ignoring, %s",e)
-            self.finished=True
-            
-        self.init_controller()
-        
-    def init_controller(self):
-        self.bus.write_byte_data(ADDRESS, REG_BUTTONPOWEROFFTIME, 20) # We deal with this directly
-        self.bus.write_byte_data(ADDRESS, REG_BUTTONMODE, BUTTONMODE_SHORT_LONG_PRESS)
-        self.bus.write_byte_data(ADDRESS, REG_INTERRUPTPIN, self.intpin) # Set interrupt pin 
-        self.update_playback_state(STATE_UNDEF)
-            
 
-    def volchange(self,val):
+        except Exception as e:
+            logging.error("no powercontroller found, ignoring, %s", e)
+            self.finished = True
+
+        self.init_controller()
+
+    def init_controller(self):
+        self.bus.write_byte_data(ADDRESS, REG_BUTTONPOWEROFFTIME, 20)  # We deal with this directly
+        self.bus.write_byte_data(ADDRESS, REG_BUTTONMODE, BUTTONMODE_SHORT_LONG_PRESS)
+        self.bus.write_byte_data(ADDRESS, REG_INTERRUPTPIN, self.intpin)  # Set interrupt pin
+        self.update_playback_state(STATE_UNDEF)
+
+    def volchange(self, val):
         if self.volumecontrol is not None:
             self.volumecontrol.change_volume_percent(val)
             report_usage("audiocontrol_powercontroller_volume", 1)
@@ -143,11 +141,11 @@ class Powercontroller(Controller):
             report_usage("audiocontrol_powercontroller_button", 1)
         else:
             logging.info("no player control, ignoring press")
-            
+
     def update_playback_state(self, state):
         if self.playerstate != state:
             self.playerstate = state
-            logging.info("Update LED state for state=%s",state)
+            logging.info("Update LED state for state=%s", state)
             try:
                 if state == STATE_PLAYING:
                     self.bus.write_byte_data(ADDRESS, REG_LEDR, 0)
@@ -161,39 +159,42 @@ class Powercontroller(Controller):
                     self.bus.write_byte_data(ADDRESS, REG_LEDMODE, LEDMODE_PULSING)
             except Exception as e:
                 logging.error("Could not write to power controller: %s", e)
-                
-                
+
     def shutdown(self):
         logging.info("shutdown initiated by button press")
         self.bus.write_byte_data(ADDRESS, REG_LEDR, 100)
         self.bus.write_byte_data(ADDRESS, REG_LEDG, 0)
         self.bus.write_byte_data(ADDRESS, REG_LEDB, 0)
         self.bus.write_byte_data(ADDRESS, REG_LEDMODE, LEDMODE_BLINK)
-        self.bus.write_byte_data(ADDRESS, REG_POWEROFFTIMER, 30) # poweroff in 30 seconds
-        
+        self.bus.write_byte_data(ADDRESS, REG_POWEROFFTIMER, 30)  # poweroff in 30 seconds
+
         os.system("systemctl poweroff")
-    
+
     def run(self):
-        
+
+        # Make sure that the "wait_for_edge" method isn't called before the thread
+        # is fully started
+        time.sleep(1)
+
         while not(self.finished):
-            
+
             try:
-                GPIO.wait_for_edge(self.intpinpi,GPIO.BOTH)
-                interrupt=True
+                GPIO.wait_for_edge(self.intpinpi, GPIO.BOTH)
+                interrupt = True
             except:
-                interrupt=False
-                
+                interrupt = False
+
             if interrupt:
-                
+
                 logging.info("Received interrupt")
-                
+
                 try:
-                    rotary_change=twos_comp(self.bus.read_byte_data(ADDRESS, REG_ROTARYCHANGE),8) # this is a signed byte
-                    button_state=self.bus.read_byte_data(ADDRESS, REG_BUTTONSTATE)
-                
+                    rotary_change = twos_comp(self.bus.read_byte_data(ADDRESS, REG_ROTARYCHANGE), 8)  # this is a signed byte
+                    button_state = self.bus.read_byte_data(ADDRESS, REG_BUTTONSTATE)
+
                     if rotary_change != 0:
-                        self.volchange(rotary_change*self.stepsize)
-                        
+                        self.volchange(rotary_change * self.stepsize)
+
                     if button_state == 1:
                         # short pressure_network
                         self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
@@ -202,11 +203,10 @@ class Powercontroller(Controller):
                         # Long press
                         self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
                         self.shutdown();
-                
+
                     logging.info("Received interrupt (rotary_change=%s, button_state=%s",
-                                 rotary_change,button_state )
+                                 rotary_change, button_state)
                 except Exception as e:
                     logging.error("Couldn't read data form I2C, aborting... (%s)", e)
-                    self.finished=True
-        
-        
+                    self.finished = True
+
