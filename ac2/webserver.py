@@ -39,7 +39,9 @@ from ac2.metadata import Metadata
 from ac2.plugins.metadata import MetadataDisplay
 from ac2.socketio import sio
 
+
 class SystemControl():
+
     def __init__(self):
         pass
 
@@ -59,7 +61,7 @@ class SystemControl():
         """Extract serial from cpuinfo file."""
         cpuserial = "0000000000000000"
         try:
-            with open('/proc/cpuinfo','r') as cpuinfo:
+            with open('/proc/cpuinfo', 'r') as cpuinfo:
                 for line in cpuinfo:
                     if line.startswith('Serial'):
                         cpuserial = line[10:].rstrip()
@@ -71,6 +73,7 @@ class SystemControl():
     def poweroff(self):
         t = threading.Timer(1.0, lambda: os.system('systemctl poweroff'))
         t.start()
+
 
 class AudioControlWebserver(MetadataDisplay):
 
@@ -151,20 +154,27 @@ class AudioControlWebserver(MetadataDisplay):
                           callback=self.system_handler)
 
     def startServer(self):
-        if self.socketio_api is None:
-            self.bottle.run(port=self.port,
-                            host=self.host,
-                            debug=self.debug,
-                            )
-        else:
-            run(self.socketio_api.app,
-                host=self.host,
-                port=self.port,
-                debug=self.debug,
-                server="gevent",
-                handler_class=WebSocketHandler
-                )
+        logging.info("start server 1")
+        try:
+            if self.socketio_api is None:
+                logging.info("starting Bottle web server")
+                self.bottle.run(port=self.port,
+                                host=self.host,
+                                debug=self.debug,
+                                )
 
+            else:
+                logging.info("starting SocketIO web server")
+                run(self.socketio_api.app,
+                    host=self.host,
+                    port=self.port,
+                    debug=self.debug,
+                    server="gevent",
+                    handler_class=WebSocketHandler
+                    )
+
+        except Exception as e:
+            logging.error("couldn't start web server", e)
 
     # A "lover" is an object that can "love" or "unlove" a song.
     def add_lover(self, lover):
@@ -190,7 +200,7 @@ class AudioControlWebserver(MetadataDisplay):
             return "{} failed with exception {}".format(command, e)
 
         return "ok"
-    
+
     def playercontrol_ignore_handler(self, command, ignore):
         try:
             if not(self.send_command(command, ignore=ignore)):
@@ -317,14 +327,14 @@ class AudioControlWebserver(MetadataDisplay):
         return static_file(filename, root='static')
 
     def artwork_handler(self, filename):
-        logging.info("artwork filename=%s",filename)
+        logging.info("artwork filename=%s", filename)
         realfile = self.artwork.get(filename)
         if realfile is None:
-            logging.warning("%s does not exist in cache",filename)
-            
+            logging.warning("%s does not exist in cache", filename)
+
         if not(pathlib.Path(realfile).exists()):
-            logging.warning("%s does not exist",realfile)
-            
+            logging.warning("%s does not exist", realfile)
+
         return static_file(realfile, root='/')
 
     # ##
@@ -352,37 +362,35 @@ class AudioControlWebserver(MetadataDisplay):
     # ##
     # ## end thread methods
     # ##
-    
-    ###
-    ### Rewrite artwork URLs if necessary
-    ###
+
+    # ##
+    # ## Rewrite artwork URLs if necessary
+    # ##
     def process_metadata(self, metadata):
-        
+
         if metadata.artUrl is None:
             return
-        
-        
-        localfile=None
+
+        localfile = None
         if metadata.artUrl.startswith("file://"):
             localfile = metadata.artUrl[7:]
         else:
             url = urllib.parse.urlparse(metadata.artUrl, scheme="file")
             if url.scheme == "file":
                 localfile = url.path
-                
+
         if localfile is not None:
             if pathlib.Path(localfile).exists():
-                # use only file part of path name, but keep it 
-                key = str(localfile).replace("/","-").replace(" ","-")
+                # use only file part of path name, but keep it
+                key = str(localfile).replace("/", "-").replace(" ", "-")
                 metadata.artUrl = "artwork/" + key
-                self.artwork[key]=localfile
+                self.artwork[key] = localfile
             else:
                 logging.warning("artwork file %s does not exist, removing artUrl (%s)",
                              localfile,
                              metadata.artUrl)
-                metadata.artUrl=None
-                
-            
+                metadata.artUrl = None
+
     # ##
     # ## metadata functions
     # ##
@@ -394,7 +402,7 @@ class AudioControlWebserver(MetadataDisplay):
     def notify_volume(self, vol):
         self.volume = vol
 
-    def send_metadata_update(self, updates, song_id = None):
+    def send_metadata_update(self, updates, song_id=None):
         if song_id is None and self.metadata is not None:
             song_id = self.metadata.songId()
         for u in self.updaters:
@@ -466,11 +474,11 @@ class AudioControlWebserver(MetadataDisplay):
                 elif command == "previous":
                     self.player_control.previous()
                 elif command == "play":
-                    self.player_control.playpause(pause=False,ignore=ignore)
+                    self.player_control.playpause(pause=False, ignore=ignore)
                 elif command == "pause":
-                    self.player_control.playpause(pause=True,ignore=ignore)
+                    self.player_control.playpause(pause=True, ignore=ignore)
                 elif command == "playpause":
-                    self.player_control.playpause(pause=None,ignore=ignore)
+                    self.player_control.playpause(pause=None, ignore=ignore)
                 elif command == "stop":
                     self.player_control.stop(ignore=ignore)
                 else:

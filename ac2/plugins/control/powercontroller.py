@@ -170,43 +170,35 @@ class Powercontroller(Controller):
 
         os.system("systemctl poweroff")
 
+    def interrupt_callback(self, channel):
+        logging.info("Received interrupt")
+
+        try:
+            rotary_change = twos_comp(self.bus.read_byte_data(ADDRESS, REG_ROTARYCHANGE), 8)  # this is a signed byte
+            button_state = self.bus.read_byte_data(ADDRESS, REG_BUTTONSTATE)
+
+            if rotary_change != 0:
+                self.volchange(rotary_change * self.stepsize)
+
+            if button_state == 1:
+                # short pressure_network
+                self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
+                self.playpause()
+            elif button_state == 2:
+                # Long press
+                self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
+                self.shutdown();
+
+            logging.info("Received interrupt (rotary_change=%s, button_state=%s",
+                         rotary_change, button_state)
+        except Exception as e:
+            logging.error("Couldn't read data form I2C, aborting... (%s)", e)
+            self.finished = True
+
     def run(self):
 
-        # Make sure that the "wait_for_edge" method isn't called before the thread
-        # is fully started
-        time.sleep(1)
-
-        while not(self.finished):
-
-            try:
-                GPIO.wait_for_edge(self.intpinpi, GPIO.BOTH)
-                interrupt = True
-            except:
-                interrupt = False
-
-            if interrupt:
-
-                logging.info("Received interrupt")
-
-                try:
-                    rotary_change = twos_comp(self.bus.read_byte_data(ADDRESS, REG_ROTARYCHANGE), 8)  # this is a signed byte
-                    button_state = self.bus.read_byte_data(ADDRESS, REG_BUTTONSTATE)
-
-                    if rotary_change != 0:
-                        self.volchange(rotary_change * self.stepsize)
-
-                    if button_state == 1:
-                        # short pressure_network
-                        self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
-                        self.playpause()
-                    elif button_state == 2:
-                        # Long press
-                        self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
-                        self.shutdown();
-
-                    logging.info("Received interrupt (rotary_change=%s, button_state=%s",
-                                 rotary_change, button_state)
-                except Exception as e:
-                    logging.error("Couldn't read data form I2C, aborting... (%s)", e)
-                    self.finished = True
-
+        try:
+            GPIO.add_event_detect(self.intpinpi, GPIO.BOTH, callback=self.interrupt_callback)
+        except Exception as e:
+            logging.error("Couldn't start GPIO callback, aborting... (%s)", e)
+            self.finished = True
