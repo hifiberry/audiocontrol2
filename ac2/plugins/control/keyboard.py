@@ -26,11 +26,12 @@ from usagecollector.client import report_usage
 from ac2.plugins.control.controller import Controller
 from evdev import InputDevice, ecodes, list_devices
 
+
 class Keyboard(Controller):
 
     def __init__(self, params: Dict[str, str]=None):
         super().__init__()
-        
+
         self.name = "keyboard"
 
         if params is None or len(params) == 0:
@@ -50,7 +51,11 @@ class Keyboard(Controller):
                 # up
                 103: "previous",
                 # down
-                108: "next"
+                108: "next",
+                # Windows play key (untested)
+                248: "play",
+                # Pause key
+                19: "pause"
             }
         else:
             self.codetable = {}
@@ -64,7 +69,7 @@ class Keyboard(Controller):
             if command == "volume_up":
                 if self.volumecontrol is not None:
                     self.volumecontrol.change_volume_percent(5)
-                    command_run =True
+                    command_run = True
                 else:
                     logging.info("ignoring %s, no volume control",
                                     command)
@@ -72,7 +77,7 @@ class Keyboard(Controller):
             elif command == "volume_down":
                 if self.volumecontrol is not None:
                     self.volumecontrol.change_volume_percent(-5)
-                    command_run =True
+                    command_run = True
                 else:
                     logging.info("ignoring %s, no volume control",
                                     command)
@@ -80,7 +85,7 @@ class Keyboard(Controller):
             elif command == "previous":
                 if self.playercontrol is not None:
                     self.playercontrol.previous()
-                    command_run =True
+                    command_run = True
                 else:
                     logging.info("ignoring %s, no playback control",
                                     command)
@@ -88,7 +93,7 @@ class Keyboard(Controller):
             elif command == "next":
                 if self.playercontrol is not None:
                     self.playercontrol.next()
-                    command_run =True
+                    command_run = True
                 else:
                     logging.info("ignoring %s, no playback control",
                                     command)
@@ -96,9 +101,21 @@ class Keyboard(Controller):
             elif command == "playpause":
                 if self.playercontrol is not None:
                     self.playercontrol.playpause()
-
-
-                    command_run =True
+                    command_run = True
+                else:
+                    logging.info("ignoring %s, no playback control",
+                                    command)
+            elif command == "play":
+                if self.playercontrol is not None:
+                    self.playercontrol.play()
+                    command_run = True
+                else:
+                    logging.info("ignoring %s, no playback control",
+                                    command)
+            elif command == "pause":
+                if self.playercontrol is not None:
+                    self.playercontrol.pause()
+                    command_run = True
                 else:
                     logging.info("ignoring %s, no playback control",
                                     command)
