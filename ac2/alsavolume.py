@@ -73,8 +73,15 @@ class ALSAVolume(threading.Thread):
                 self.set_volume(0)
         else:
             logging.debug("unmuting")
-            if self.unmuted_volume > 0:
+            if self.volume == 0 and self.unmuted_volume > 0:
                 self.set_volume(self.unmuted_volume)
+
+    def toggle_mute(self):
+        if self.volume != 0:
+            self.unmuted_volume = self.volume
+            self.set_volume(0)
+        elif self.unmuted_volume > 0:
+            self.set_volume(self.unmuted_volume)
 
     def run(self):
         while True:

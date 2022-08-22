@@ -40,8 +40,10 @@ class Keyboard(Controller):
             self.codetable = {
                 # volume up
                 115: "volume_up",
-                 # volume down
+                # volume down
                 114: "volume_down",
+                # mute
+                113: "mute",
                 # right
                 106: "next",
                 # left
@@ -60,7 +62,7 @@ class Keyboard(Controller):
         else:
             self.codetable = {}
             for i in params:
-                self.codetable[int(params[i])] = i
+                self.codetable[int(i)] = params[i]
 
     def handle_key_event(self, event):
         command = self.codetable.get(event.code)
@@ -78,6 +80,14 @@ class Keyboard(Controller):
                 if self.volumecontrol is not None:
                     self.volumecontrol.change_volume_percent(-5)
                     command_run = True
+                else:
+                    logging.info("ignoring %s, no volume control",
+                                    command)
+
+            elif command == "mute":
+                if self.volumecontrol is not None:
+                    self.volumecontrol.toggle_mute()
+                    command_run =True
                 else:
                     logging.info("ignoring %s, no volume control",
                                     command)
