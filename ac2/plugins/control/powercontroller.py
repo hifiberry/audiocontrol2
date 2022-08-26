@@ -116,11 +116,11 @@ class Powercontroller(Controller):
                 # TODO: report activation
                 pass
 
-        except Exception as e:
-            logging.error("no powercontroller found, ignoring, %s", e)
-            self.finished = True
+            self.init_controller()
 
-        self.init_controller()
+        except Exception as e:
+            logging.error("no power controller found, ignoring, %s", e)
+            self.finished = True
 
     def init_controller(self):
         self.bus.write_byte_data(ADDRESS, REG_BUTTONPOWEROFFTIME, 20)  # We deal with this directly
