@@ -1,6 +1,6 @@
 # REST API
 
-With the REST API you can control players using HTTP requests. At this point, no encryption and authentication are supported.
+With the REST API you can control players using HTTP requests. At this point, no encryption and authentication are supported. As port 80 is already used by the web interface, audiocontrol runs on port 81 by default.
 
 ## Control active player
 
