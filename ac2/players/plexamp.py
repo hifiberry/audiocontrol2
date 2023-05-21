@@ -18,7 +18,6 @@ class PlexampControl(PlayerControl):
     def __init__(self, args={}):
         self.playername = "plexamp"
         self.state = STATE_PAUSED
-        self.metadata = Metadata()
         self.port = "32500"
         self.host = "127.0.0.1"
 
