@@ -73,7 +73,7 @@ class PlexampControl(PlayerControl):
         else:
             cmd = command
 
-        response = requests.get("http://" + self.host + ":" + self.port + "/player/playback/" + cmd + "?commandID=1&type=music")
+        requests.get("http://" + self.host + ":" + self.port + "/player/playback/" + cmd + "?commandID=1&type=music")
 
     def is_active(self):
         return True
