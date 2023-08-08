@@ -29,6 +29,7 @@ import os
 import pathlib
 import threading
 import urllib.parse
+import time
 
 import socketio
 
@@ -38,7 +39,7 @@ from expiringdict import ExpiringDict
 from ac2.metadata import Metadata
 from ac2.plugins.metadata import MetadataDisplay
 from ac2.socketio import sio
-
+from ac2.ostools import is_alsa_playing, kill_kill_players, kill_players
 
 class SystemControl():
 
@@ -134,6 +135,9 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/api/player/<command>/<ignore>',
                           method="POST",
                           callback=self.playercontrol_ignore_handler)
+        self.bottle.route('/api/players/stopall',
+                          method="POST",
+                          callback=self.stopall_handler)
         self.bottle.route('/api/track/metadata',
                           method="GET",
                           callback=self.metadata_handler)
@@ -191,6 +195,49 @@ class AudioControlWebserver(MetadataDisplay):
     # ##
     # ## begin URL handlers
     # ##
+
+    def stopall_handler(self):
+        try:
+            stopped = not(is_alsa_playing())
+            sleeptimes = [0, 1, 1, 1];
+
+            if not(stopped):
+                # first try a graceful stop
+                self.send_command("pause");
+                for t in sleeptimes:
+                    time.sleep(t)
+                    if not(is_alsa_playing()):
+                        stopped = True
+                        break
+
+            if not(stopped):
+                # now try a kill
+                kill_players()
+                for t in sleeptimes:
+                    time.sleep(t)
+                    if not(is_alsa_playing()):
+                        stopped = True
+                        break
+
+            if not(stopped):
+                # now do it the hard way using kill -KILL
+                kill_kill_players()
+                for t in sleeptimes:
+                    time.sleep(t)
+                    if not(is_alsa_playing()):
+                        stopped = True
+                        break
+
+        except Exception as e:
+            response.status = 500
+            return "{} failed with exception {}".format(command, e)
+
+        if stopped:
+            return "ok"
+        else:
+            response.status = 500
+            return "something is still active on the ALSA device"
+       
 
     def playercontrol_handler(self, command):
         try:
