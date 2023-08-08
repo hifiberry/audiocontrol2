@@ -109,3 +109,4 @@ venv.bak/
 update
 Pipfile.lock
 .vscode/settings.json
+/.vs
