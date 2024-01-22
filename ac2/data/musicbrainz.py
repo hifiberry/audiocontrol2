@@ -32,8 +32,6 @@ musicbrainzngs.set_useragent(
     "https://github.com/hifiberry/audiocontrol2/" + release(),
 )
 
-musicbrainzngs.set_hostname("musicbrainz.hifiberry.com")
-
 
 def artist_data(artistname):
     try:
