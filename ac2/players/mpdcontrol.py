@@ -30,142 +30,135 @@ from ac2.constants import CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_STOP
     CMD_RANDOM, CMD_NORANDOM, CMD_REPEAT_ALL, CMD_REPEAT_NONE, \
     STATE_PAUSED, STATE_PLAYING, STATE_STOPPED, STATE_UNDEF
 from ac2.metadata import Metadata
+from ac2.data import mpd as mpddata
 
-   
-MPD_STATE_PLAY="play"
-MPD_STATE_PAUSE="pause"
-MPD_STATE_STOPPED="stop"
+MPD_STATE_PLAY = "play"
+MPD_STATE_PAUSE = "pause"
+MPD_STATE_STOPPED = "stop"
 
-MPD_ATTRIBUTE_MAP={
+MPD_ATTRIBUTE_MAP = {
     "artist": "artist",
     "title": "title",
     "albumartist": "albumArtist",
     "album": "albumTitle",
     "disc": "discNumber",
-    "track": "tracknumber", 
+    "track": "tracknumber",
     "duration": "duration",
     "time": "time",
-    "file": "streamUrl" 
+    "file": "streamUrl"
     }
 
-STATE_MAP={
+STATE_MAP = {
     MPD_STATE_PAUSE: STATE_PAUSED,
     MPD_STATE_PLAY: STATE_PLAYING,
     MPD_STATE_STOPPED: STATE_STOPPED
 }
 
-    
 
 class MPDControl(PlayerControl):
-    
+
     def __init__(self, args={}):
-        self.client=None
-        self.playername="MPD"
+        self.client = None
+        self.playername = "MPD"
         if "port" in args:
-            self.port=args["port"]
+            self.port = args["port"]
         else:
-            self.port=6600
-            
+            self.port = 6600
+
         if "host" in args:
-            self.host=args["host"]
+            self.host = args["host"]
         else:
-            self.host="localhost"
-            
+            self.host = "localhost"
+
         if " timeout" in args:
-            self.timeout=args["timeout"]
+            self.timeout = args["timeout"]
         else:
-            self.timeout=5
-            
+            self.timeout = 5
+
         self.connect()
 
-        
     def start(self):
         # No threading implemented
         pass
-    
-    
+
     def connect(self):
         if self.client is not None:
             return self.client
-        
+
         self.client = MPDClient()
         self.client.timeout = self.timeout
         try:
             self.client.connect(self.host, self.port)
-            logging.info("Connected to %s:%s",self.host, self.port)
+            logging.info("Connected to %s:%s", self.host, self.port)
         except:
-            self.client=None
-        
-        
+            self.client = None
+
     def disconnect(self):
         if self.client is None:
             return
-        
+
         try:
             self.client.close()
             self.client.disconnect()
         except:
             pass
-        
-        self.client=None
-        
+
+        self.client = None
+
     def get_supported_commands(self):
         return [CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_STOP, CMD_PLAY, CMD_SEEK,
-                CMD_RANDOM, CMD_NORANDOM, CMD_REPEAT_ALL, CMD_REPEAT_NONE]   
-            
-    
+                CMD_RANDOM, CMD_NORANDOM, CMD_REPEAT_ALL, CMD_REPEAT_NONE]
+
     def get_state(self):
         if self.client is None:
             self.connect()
 
         if self.client is None:
             return {}
-        
+
         try:
-            status=self.client.status()
+            status = self.client.status()
         except:
             # Connection to MPD might be broken
             self.disconnect()
             self.connect()
-    
-        
+
         try:
             state = STATE_MAP[status["state"]]
         except:
             state = STATE_UNDEF
-            
+
         return state
-    
-        
+
     def get_meta(self):
-        state=self.get_state()
-        
+        state = self.get_state()
+
         song = None
-        if state in [STATE_PLAYING,STATE_PAUSED]:
-            song=self.client.currentsong()
-             
+        if state in [STATE_PLAYING, STATE_PAUSED]:
+            song = self.client.currentsong()
+
         md = Metadata()
         md.playerName = "mpd"
-        
+
         if song is not None:
-            map_attributes(song, md.__dict__,MPD_ATTRIBUTE_MAP)
-        
+            map_attributes(song, md.__dict__, MPD_ATTRIBUTE_MAP)
+
         return md
-    
-    def send_command(self,command, parameters={}):
+
+    def send_command(self, command, parameters={}):
         if command not in self.get_supported_commands():
-            return False 
-        
+            return False
+
         if self.client is None:
             self.reconnect()
 
         if self.client is None:
             return False
-        
-        playstate=None
+
+        playstate = None
         if command in [CMD_PLAY, CMD_PLAYPAUSE]:
-            playstate=self.get_state()
-        
+            playstate = self.get_state()
+
         if command == CMD_NEXT:
             self.client.next()
         elif command == CMD_PREV:
@@ -196,12 +189,11 @@ class MPDControl(PlayerControl):
                 self.send_command(CMD_PLAY)
         else:
             logging.warning("command %s not implemented", command)
-            
-        
+
     """
-    Checks if a player is active on the system and can result a 
+    Checks if a player is active on the system and can result a
     state. This does NOT mean this player is running
     """
+
     def is_active(self):
         return self.client is not None
-    
