@@ -20,7 +20,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-
 import time
 import logging
 import datetime
@@ -83,17 +82,17 @@ class AudioController():
         self.volume_control = None
         self.metadata_processors = []
         self.state_displays = []
-        self.players={}
+        self.players = {}
         self.mpris = MPRIS()
         self.mpris.connect_dbus()
-        
-    
+
     """
     Register a non-mpris player controls
     """
-    def register_nonmpris_player(self,name,controller):
-        self.players[name]=controller
-        
+
+    def register_nonmpris_player(self, name, controller):
+        self.players[name] = controller
+
     def register_metadata_display(self, mddisplay):
         self.metadata_displays.append(mddisplay)
 
@@ -121,41 +120,38 @@ class AudioController():
 
         self.metadata = metadata
 
-
     def all_players(self):
         """
         Returns a list of MPRIS and non-MPRIS players
         """
-        players=list(self.players.keys())+self.mpris.retrieve_players()
-        logging.debug("players: %s",players)
+        players = list(self.players.keys()) + self.mpris.retrieve_players()
+        logging.debug("players: %s", players)
         return players
-        
 
     def get_player_state(self, name):
         """
         Returns the playback state for the given player instance
-        
+
         It can handle both MPRIS and non-MPRIS players
         """
-        
+
         if name in self.players.keys():
             return self.players[name].get_state()
         else:
             return self.mpris.retrieve_state(name)
-        
+
     def get_supported_commands(self, name):
         if name in self.players.keys():
             return self.players[name].get_supported_commands()
         else:
             return self.mpris.get_supported_commands(name)
-        
-        
-    def send_command_to_player(self,name,command):
+
+    def send_command_to_player(self, name, command):
         if name in self.players.keys():
             self.players[name].send_command(command)
         else:
-            self.mpris.send_command(name,command)
-            
+            self.mpris.send_command(name, command)
+
     def pause_inactive(self, active_player):
         """
         Automatically pause other player if playback was started
@@ -164,9 +160,9 @@ class AudioController():
         for p in self.state_table:
             if (p != active_player) and \
                     (self.state_table[p].state == STATE_PLAYING):
-                logging.info("Pausing " + self.playername(p))
+                logging.info("Pausing " + self.playername(p) +
+                             " for " + self.playername(active_player))
                 self.send_command(p, CMD_PAUSE)
-
 
     def pause_all(self):
         for player in self.state_table:
@@ -192,7 +188,7 @@ class AudioController():
             else:
                 playerName = self.active_player
 
-        res = self.send_command_to_player(playerName, command)    
+        res = self.send_command_to_player(playerName, command)
         logging.info("sent %s to %s", command, playerName)
 
         return res
@@ -206,24 +202,23 @@ class AudioController():
             res = self.mpris_command(MPRIS_PREFIX + playername, command)
 
         return res
-    
-    
+
     def get_meta(self, name):
         if name in self.players.keys():
-            md=self.players[name].get_meta()
+            md = self.players[name].get_meta()
         else:
-            md=self.mpris.get_meta(name)
-            
+            md = self.mpris.get_meta(name)
+
         if md is None:
             return None
-        
+
         md.fix_problems()
-            
+
         for p in self.metadata_processors:
             p.process_metadata(md)
-            
+
         return md
-                
+
     def update_metadata_attributes(self, updates, songId):
         logging.debug("received metadata update: %s", updates)
 
@@ -275,13 +270,13 @@ class AudioController():
             state = "unknown"
             last_ts = ts
             ts = datetime.datetime.now()
-            duration = (ts-last_ts).total_seconds()
+            duration = (ts - last_ts).total_seconds()
 
             for p in self.all_players():
 
                 if self.playername(p) in self.ignore_players:
                     continue
-                
+
                 if p not in self.state_table:
                     ps = PlayerState()
                     ps.supported_commands = self.get_supported_commands(p)
@@ -319,11 +314,10 @@ class AudioController():
 
                     if self.playername(p) == LMS_NAME:
                         squeezelite_active = 2
-                        
-                    report_usage("audiocontrol_playing_{}".format(self.playername(p)),duration)
+
+                    report_usage("audiocontrol_playing_{}".format(self.playername(p)), duration)
 
                     md = self.get_meta(p)
-
 
                     if (p not in active_players):
                         new_player_started = p
@@ -352,14 +346,14 @@ class AudioController():
                     elif state != previous_state:
                         logging.debug("changed state to playing")
                         self.metadata_notify(md)
-                        
+
                     # Some players deliver artwork after initial metadata
                     if md.artUrl != self.metadata.artUrl:
                         logging.debug("artwork changes from %s to %s",
                                       self.metadata.artUrl,
                                       md.artUrl)
                         self.metadata_notify(md)
-                        
+
                     # Add metadata if this is a new song
                     if new_song:
                         enrich_metadata_bg(md, callback=self)
@@ -395,7 +389,7 @@ class AudioController():
 #             # Assume Spotify is still playing for 10 seconds if it's the
 #             # active (or last stopped) player
 #             if self.playername(self.active_player) == SPOTIFY_NAME:
-#                 # Less aggressive metadata polling on Spotify as each polling will 
+#                 # Less aggressive metadata polling on Spotify as each polling will
 #                 # result in an API request
 #                 additional_delay = 4
 #                 if not(playing):
@@ -404,7 +398,7 @@ class AudioController():
 #                         if (spotify_stopped % 5) == 0:
 #                             logging.debug("spotify workaround %s", spotify_stopped)
 #                         playing = True
-#                     
+#
 
             # Workaround for LMS muting the output after stopping the
             # player
@@ -449,7 +443,7 @@ class AudioController():
 
             self.last_update = datetime.datetime.now()
 
-            time.sleep(self.loop_delay+additional_delay)
+            time.sleep(self.loop_delay + additional_delay)
 
     # ##
     # ## controller functions
@@ -462,24 +456,24 @@ class AudioController():
         self.send_command(CMD_NEXT)
 
     def playpause(self, pause=None, ignore=None):
-        
+
         if ignore is not None:
             if self.active_player.lower() == ignore.lower():
                 logging.info("Got a playpquse request that should be ignored (%s)",
                              ignore)
                 return
-        
+
         command = None
         if pause is None:
             if self.playing:
-                command=CMD_PAUSE
+                command = CMD_PAUSE
             else:
-                command=CMD_PLAY
+                command = CMD_PLAY
         elif pause:
-            command=CMD_PAUSE
+            command = CMD_PAUSE
         else:
-            command=CMD_PLAY
-                
+            command = CMD_PLAY
+
         self.send_command(command)
 
     def stop(self):

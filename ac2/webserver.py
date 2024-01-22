@@ -199,7 +199,9 @@ class AudioControlWebserver(MetadataDisplay):
     def stopall_handler(self):
         try:
             stopped = not(is_alsa_playing())
-            sleeptimes = [0, 1, 1, 1];
+            sleeptimes = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+
+            logging.info("Pausing active player")
 
             if not(stopped):
                 # first try a graceful stop
@@ -211,6 +213,8 @@ class AudioControlWebserver(MetadataDisplay):
                         break
 
             if not(stopped):
+                logging.info("Player still running after sending pause command")
+
                 # now try a kill
                 kill_players()
                 for t in sleeptimes:
@@ -220,6 +224,7 @@ class AudioControlWebserver(MetadataDisplay):
                         break
 
             if not(stopped):
+                logging.info("Player still running after sending kill")
                 # now do it the hard way using kill -KILL
                 kill_kill_players()
                 for t in sleeptimes:
