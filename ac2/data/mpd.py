@@ -27,34 +27,32 @@ Get metadata from MPD
 import logging
 from pathlib import Path
 
+
 class MpdMetadataProcessor():
-    
+
     def __init__(self, basedir="/"):
-        self.base=Path(basedir)
-        self.currentCover=None
-        self.currentUrl=None
-        
-        
+        self.base = Path(basedir)
+        self.currentCover = None
+        self.currentUrl = None
+
     def process_metadata(self, metadata):
-        if metadata.playerName=="mpd":
+        if metadata.playerName == "mpd":
             url = metadata.streamUrl
-            
             if metadata.artUrl is None and url is not None:
-                
                 if url == self.currentUrl:
-                    metadata.artUrl=self.currentCover
+                    metadata.artUrl = self.currentCover
                 else:
                     musicfile = Path(self.base, metadata.streamUrl)
-                    self.currentCover=self.coverart(musicfile)
-                    self.currentUrl=url
-                    metadata.artUrl="file://"+str(self.currentCover)
-                
-                
+                    self.currentCover = self.coverart(musicfile)
+                    self.currentUrl = url
+                    metadata.artUrl = "file://" + str(self.currentCover)
+                    logging.error("artURL " + metadata.artUrl)
+
     def coverart(self, musicfile):
         musicdir = musicfile.parents[0]
         for f in Path(musicdir).glob("*.???*"):
-            for b in ["cover","front","folder"]:
-                for ext in [".jpg",".jpeg",".png",".gif"]:
-                    if str(f.name).lower() == b+ext:
+            for b in ["cover", "front", "folder"]:
+                for ext in [".jpg", ".jpeg", ".png", ".gif"]:
+                    if str(f.name).lower() == b + ext:
                         return str(f)
-                
+
