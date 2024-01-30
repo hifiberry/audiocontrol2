@@ -87,7 +87,7 @@ class Keyboard(Controller):
             elif command == "mute":
                 if self.volumecontrol is not None:
                     self.volumecontrol.toggle_mute()
-                    command_run =True
+                    command_run = True
                 else:
                     logging.info("ignoring %s, no volume control",
                                     command)
@@ -133,20 +133,23 @@ class Keyboard(Controller):
             if command_run:
                 report_usage("audiocontrol_keyboard_key", 1)
 
-            logging.debug("processed %s", command)
+            logging.info("processed %s", command)
 
         except Exception as e:
             logging.warning("problem handling %s (%s)", command, e)
 
     def run(self):
+        logging.info("starting keyboard listener")
         try:
             asyncio.run(self.bind_devices())
-        except:
+        except Exception as e:
+            logging.exception(e)
             logging.error("could not start Keyboard listener, "
                            "no keyboard detected or no permissions")
 
     async def bind_devices(self):
-        await asyncio.gather(*[self.listen(keyboard) for keyboard in self.get_keyboards()])
+        keyboards = self.get_keyboards()
+        await asyncio.gather(*[self.listen(keyboard) for keyboard in keyboards])
 
     async def listen(self, dev):
         logging.info(f"keyboard listener started for {dev.name}")
@@ -156,7 +159,13 @@ class Keyboard(Controller):
 
     def get_keyboards(self):
         devices = [InputDevice(path) for path in list_devices()]
+        devicecount = 0
         for device in devices:
+
             if 1 in device.capabilities():
                 if any(x in self.codetable.keys() for x in device.capabilities()[1]):
+                    devicecount += 1
                     yield device
+
+        logging.info("Found " + str(devicecount)
+                     +"keyboard devices with the required keys")

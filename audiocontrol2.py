@@ -72,21 +72,28 @@ def print_state(signalNumber=None, frame=None):
         print("\n" + str(mpris))
 
 
-def create_object(classname, param = None):
+def create_object(classname, param=None):
     #    [module_name, class_name] = classname.rsplit(".", 1)
     #    module = __import__(module_name)
     #    my_class = getattr(module, class_name)
 
-    import importlib
-    module_name, class_name = classname.rsplit(".", 1)
-    MyClass = getattr(importlib.import_module(module_name), class_name)
-    
-    if param is None:
-        instance = MyClass()
-    else:
-        instance = MyClass(param)
+    try:
+        import importlib
+        module_name, class_name = classname.rsplit(".", 1)
+        MyClass = getattr(importlib.import_module(module_name), class_name)
 
-    return instance
+        if param is None:
+            instance = MyClass()
+        else:
+            instance = MyClass(param)
+
+        return instance
+    except RuntimeError as e:
+        logging.exception(e)
+    except ModuleNotFoundError as e1:
+        logging.exception(e1)
+
+    return None
 
 
 def parse_config(debugmode=False):
@@ -183,7 +190,7 @@ def parse_config(debugmode=False):
                     if server is not None:
                         server.add_lover(lastfmscrobbler)
                         Metadata.loveSupportedDefault = True
-                        
+
                     report_activate("audiocontrol_lastfm_scrobble")
 
                 except Exception as e:
@@ -218,41 +225,44 @@ def parse_config(debugmode=False):
             watchdog.add_monitored_thread(volume_control, "volume control")
 
         mpris.set_volume_control(volume_control)
-        
+
         report_activate("audiocontrol_volume")
 
     if volume_control is None:
         logging.info("volume control not configured, "
                      "disabling volume control support")
 
-           
     # Additional controller modules
     for section in config.sections():
         if section.startswith("controller:"):
-            [_,classname] = section.split(":",1)
+            [_, classname] = section.split(":", 1)
+            logging.info("Controller class: %s", classname)
             try:
                 params = config[section]
                 controller = create_object(classname, params)
-                controller.set_player_control(mpris)
-                controller.set_volume_control(volume_control)
-                mpris.register_state_display(controller)
-                controller.start()
-                logging.info("started controller %s", controller)
-                report_activate("audiocontrol_controller_"+classname)
+                if controller is not None:
+                    controller.set_player_control(mpris)
+                    controller.set_volume_control(volume_control)
+                    mpris.register_state_display(controller)
+                    controller.start()
+                    logging.info("started controller %s", controller)
+                    report_activate("audiocontrol_controller_" + classname)
+                else:
+                    logging.error("could not create controller %s", classname)
             except Exception as e:
                 logging.error("Exception during controller %s initialization",
                               classname)
                 logging.exception(e)
 
         if section.startswith("metadata:"):
-            [_,classname] = section.split(":",1)
+            [_, classname] = section.split(":", 1)
             try:
                 params = config[section]
                 metadata_display = create_object(classname, params)
                 mpris.register_metadata_display(metadata_display)
                 volume_control.add_listener(metadata_display)
                 logging.info("registered metadata display %s", metadata_display)
-                report_activate("audiocontrol_metadata_"+classname)
+                report_activate("audiocontrol_metadata_" + classname)
             except Exception as e:
                 logging.error("Exception during controller %s initialization",
                               classname)
@@ -299,26 +309,25 @@ def parse_config(debugmode=False):
 
         except Exception as e:
             logging.error("can't activate volume_post: %s", e)
-            
+
     # Native MPD backend and metadata processor
     if "mpd" in config.sections():
         mpdc = MPDControl()
         mpdc.start()
-        mpris.register_nonmpris_player("mpd",mpdc)
+        mpris.register_nonmpris_player("mpd", mpdc)
         logging.info("registered non-MPRIS mpd backend")
 
-        mpddir=config.get("mpd", "musicdir",fallback=None)
+        mpddir = config.get("mpd", "musicdir", fallback=None)
         if mpddir is not None:
             mpdproc = MpdMetadataProcessor(mpddir)
             mpris.register_metadata_processor(mpdproc)
-            logging.info("added MPD cover art handler on %s",mpddir)
-            
+            logging.info("added MPD cover art handler on %s", mpddir)
+
     # Vollibrespot
     vlrctl = VollibspotifyControl()
     vlrctl.start()
-    mpris.register_nonmpris_player(SPOTIFYNAME,vlrctl)
-            
-            
+    mpris.register_nonmpris_player(SPOTIFYNAME, vlrctl)
+
     # Other settings
     if "privacy" in config.sections():
         extmd = config.getboolean("privacy",
@@ -334,12 +343,11 @@ def parse_config(debugmode=False):
         logging.info("no privacy settings found, using defaults")
 
     logging.debug("ac2.md.extmd %s", ac2.metadata.external_metadata)
-    
+
     # Web server has to rewrite artwork URLs
     if server is not None:
         mpris.register_metadata_processor(server)
         logging.info("enabled web server meta data processor")
-    
 
     # Other system settings
     global startup_command
@@ -350,6 +358,7 @@ def parse_config(debugmode=False):
         dummy = DummyMetadataCreator(server, interval=3)
         dummy.start()
 
+
 def init_socketio_api(webserver):
     socketio_api = SocketioAPI(webserver.bottle, mpris)
     webserver.socketio_api = socketio_api
@@ -358,11 +367,11 @@ def init_socketio_api(webserver):
 
 def main():
 
-    verbose=False
+    verbose = False
     if len(sys.argv) > 1:
         if "-v" in sys.argv:
-            verbose=True
-            
+            verbose = True
+
     if verbose:
         logging.basicConfig(format='%(levelname)s: %(module)s - %(message)s',
                             level=logging.DEBUG)
