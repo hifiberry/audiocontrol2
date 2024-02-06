@@ -1,6 +1,9 @@
 # REST API
 
 With the REST API you can control players using HTTP requests. At this point, no encryption and authentication are supported.
+Be carefull to comunicate via Port 81 and not Port 80, as it is already taken up by the Web Interface and you won't reach the API.
+
+Also be aware that the http://[name].local changes with how you name your Device. Space is represented by "-" (e.g. Hifi-Berry.local)
 
 ## Control active player
 
@@ -79,7 +82,7 @@ To mute/unmute the volume or toggle the mute state use POST requests to
 ```
 
 ```
-curl -X POST http://127.0.0.1:80/api/volume/togglemute
+curl -X POST http://127.0.0.1:81/api/volume/togglemute
 ```
 
 ## System
@@ -102,9 +105,9 @@ authtoken=hifiberry
 Note that these examples assume audiocontrol to listen on port 80. On HiFiBerryOS, audiocontrol is listening on port 81. Therefore, you will need to change the port number.
 
 ```console
-curl -X post http://127.0.0.1:80/api/player/previous
-curl -X post http://127.0.0.1:80/api/track/love
+curl -X post http://127.0.0.1:81/api/player/previous
+curl -X post http://127.0.0.1:81/api/track/love
 curl http://127.0.0.1:80/api/track/metadata
-curl -X POST -H "Content-Type: application/json" -d '{"percent":"+5"}' http://127.0.0.1:80/api/volume
+curl -X POST -H "Content-Type: application/json" -d '{"percent":"+5"}' http://127.0.0.1:81/api/volume
 curl -X POST hifiberry.local:81/api/system/poweroff -H "Authtoken: hifiberry"
 ```
