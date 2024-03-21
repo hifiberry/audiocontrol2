@@ -49,6 +49,7 @@ from ac2.players.mpdcontrol import MPDControl
 from ac2.players.vollibrespot import VollibspotifyControl
 from ac2.players.vollibrespot import MYNAME as SPOTIFYNAME
 from ac2.socketio import SocketioAPI
+from ac2.processmapper import ProcessMapper
 
 from ac2 import watchdog
 
@@ -352,6 +353,11 @@ def parse_config(debugmode=False):
     # Other system settings
     global startup_command
     startup_command = config.get("system", "startup-finished", fallback=None)
+
+    # Process mapper
+    if "processes" in config.sections():
+         mapper = ProcessMapper()
+         mapper.load_mappings_from_config(config["processes"])
 
     if debugmode:
         from ac2.dev.dummydata import DummyMetadataCreator

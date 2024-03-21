@@ -39,7 +39,9 @@ from expiringdict import ExpiringDict
 from ac2.metadata import Metadata
 from ac2.plugins.metadata import MetadataDisplay
 from ac2.socketio import sio
-from ac2.ostools import is_alsa_playing, kill_kill_players, kill_players
+from ac2.ostools import is_alsa_playing, kill_kill_players, kill_players, is_process_playing
+from ac2.processmapper import ProcessMapper
+
 
 class SystemControl():
 
@@ -100,6 +102,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.updaters = []
         self.artwork = ExpiringDict(max_len=100, max_age_seconds=36000000)
         self.socketio_api = None
+        self.process_mapper = ProcessMapper()
 
         self.notify(Metadata("Artist", "Title", "Album"))
 
@@ -135,7 +138,7 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/api/player/<command>/<ignore>',
                           method="POST",
                           callback=self.playercontrol_ignore_handler)
-        self.bottle.route('/api/players/stopall',
+        self.bottle.route('/api/players/stopall/<player>',
                           method="POST",
                           callback=self.stopall_handler)
         self.bottle.route('/api/track/metadata',
@@ -163,13 +166,13 @@ class AudioControlWebserver(MetadataDisplay):
     def startServer(self):
         logging.info("start server 1")
         try:
+            logging.info("start server 2")
             if self.socketio_api is None:
                 logging.info("starting Bottle web server")
                 self.bottle.run(port=self.port,
                                 host=self.host,
                                 debug=self.debug,
                                 )
-
             else:
                 logging.info("starting SocketIO web server")
                 run(self.socketio_api.app,
@@ -196,53 +199,56 @@ class AudioControlWebserver(MetadataDisplay):
     # ## begin URL handlers
     # ##
 
-    def stopall_handler(self):
+    def stopall_handler(self, player=None):
+
         try:
             stopped = not(is_alsa_playing())
+            if stopped:
+                logging.info("Nothing playing, no need to stop")
+                return "ok"
+
+            # Pause except for a specific player
+            if player is not None and player != "":
+
+                processname = self.process_mapper.get_process_name(player, player)
+                if is_process_playing(processname):
+                    logging.info("Player %s is playing, not stopping it", processname)
+                    return "ok"
+
             sleeptimes = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 
             logging.info("Pausing active player")
 
-            if not(stopped):
-                # first try a graceful stop
-                self.send_command("pause");
-                for t in sleeptimes:
-                    time.sleep(t)
-                    if not(is_alsa_playing()):
-                        stopped = True
-                        break
+            # first try a graceful stop
+            self.send_command("pause");
+            for t in sleeptimes:
+                time.sleep(t)
+                if not(is_alsa_playing()):
+                    return "ok"
 
-            if not(stopped):
-                logging.info("Player still running after sending pause command")
+            logging.info("Player still running after sending pause command")
 
-                # now try a kill
-                kill_players()
-                for t in sleeptimes:
-                    time.sleep(t)
-                    if not(is_alsa_playing()):
-                        stopped = True
-                        break
+            # now try a kill
+            kill_players()
+            for t in sleeptimes:
+                time.sleep(t)
+                if not(is_alsa_playing()):
+                    return "ok"
 
-            if not(stopped):
-                logging.info("Player still running after sending kill")
-                # now do it the hard way using kill -KILL
-                kill_kill_players()
-                for t in sleeptimes:
-                    time.sleep(t)
-                    if not(is_alsa_playing()):
-                        stopped = True
-                        break
+            logging.info("Player still running after sending kill")
+            # now do it the hard way using kill -KILL
+            kill_kill_players()
+            for t in sleeptimes:
+                time.sleep(t)
+                if not(is_alsa_playing()):
+                    return "ok"
 
         except Exception as e:
             response.status = 500
             return "{} failed with exception {}".format(command, e)
 
-        if stopped:
-            return "ok"
-        else:
-            response.status = 500
-            return "something is still active on the ALSA device"
-       
+        response.status = 500
+        return "something is still active on the ALSA device"
 
     def playercontrol_handler(self, command):
         try:

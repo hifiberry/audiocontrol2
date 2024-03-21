@@ -40,14 +40,14 @@ VOLSPOTIFY_PLAY = 0x5
 VOLSPOTIFY_PLAYPAUSE = 0x6
 VOLSPOTIFY_NEXT = 0x7
 VOLSPOTIFY_PREV = 0x8
-   
-VOLSPOTIFY_ATTRIBUTE_MAP={
+
+VOLSPOTIFY_ATTRIBUTE_MAP = {
     "album_name": "albumTitle",
     "artist_name": "artist",
-    "track_name": "title" 
+    "track_name": "title"
 }
 
-VOLSPOTIFY_CMD_MAP={
+VOLSPOTIFY_CMD_MAP = {
     CMD_NEXT: VOLSPOTIFY_NEXT,
     CMD_PREV: VOLSPOTIFY_PREV,
     CMD_PAUSE: VOLSPOTIFY_PAUSE,
@@ -55,95 +55,94 @@ VOLSPOTIFY_CMD_MAP={
     CMD_PLAY: VOLSPOTIFY_PLAY
 }
 
-MYNAME = "spotify"
-    
+MYNAME = "volllibrespot"
+
+
 class VollibspotifyControl(PlayerControl):
-    
+
     def __init__(self, args={}):
-        self.client=None
-        self.playername=MYNAME
+        self.client = None
+        self.playername = MYNAME
         self.state = STATE_STOPPED
         self.metadata = Metadata()
 
         if "port" in args:
-            self.port=args["port"]
+            self.port = args["port"]
         else:
-            self.port=5030
-            
+            self.port = 5030
+
         if "host" in args:
-            self.host=args["host"]
+            self.host = args["host"]
         else:
-            self.host="localhost"
-            
-        self.lastupdated=0
-        self.tokenupdated=0
-        self.token=None
-        self.access_token=None
-            
+            self.host = "localhost"
+
+        self.lastupdated = 0
+        self.tokenupdated = 0
+        self.token = None
+        self.access_token = None
+
     def start(self):
         self.listener = VollibspotifyMetadataListener(self)
         self.listener.start()
         self.tokenrefresher = VollibspotifyTokenRefresher(self)
         self.tokenrefresher.start()
-    
+
     def get_supported_commands(self):
-        return [CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_PLAY]   
-            
+        return [CMD_NEXT, CMD_PREV, CMD_PAUSE, CMD_PLAYPAUSE, CMD_PLAY]
+
     def get_state(self):
         # If there was no update form Spotify during the last 30 minutes,
         # there's probably nothing playing anymore
-        if time.time()-self.lastupdated < 1800:
+        if time.time() - self.lastupdated < 1800:
             return self.state
         else:
             return STATE_STOPPED
-    
+
     def set_state(self, state):
-        self.state=state
+        self.state = state
         self.report_alive()
-        
+
     def report_alive(self):
         self.lastupdated = time.time()
-        
+
     def get_meta(self):
         return self.metadata
-    
-    def send_command(self,command, parameters={}, mapping=True):
+
+    def send_command(self, command, parameters={}, mapping=True):
         if mapping and command not in self.get_supported_commands():
             return False
-        
+
         if mapping:
             cmd = VOLSPOTIFY_CMD_MAP[command]
         else:
-            cmd=command
-             
-        serverAddressPort = (self.host, self.port+1)
+            cmd = command
+
+        serverAddressPort = (self.host, self.port + 1)
         UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         UDPClientSocket.sendto(bytes([cmd]), serverAddressPort)
-        logging.debug("sent %s to vollibrespot",cmd)
+        logging.debug("sent %s to vollibrespot", cmd)
 
     def is_active(self):
         return True
-    
-    
+
     def __del__(self):
         """
         Finish background threads
         """
-        self.listener.finished=True
-        self.tokenrefresher.finished=True
-    
-    
-    
+        self.listener.finished = True
+        self.tokenrefresher.finished = True
+
+
 class VollibspotifyMetadataListener(threading.Thread):
-    
+
     def __init__(self, control):
         threading.Thread.__init__(self)
         self.control = control
-        self.finished=False
-          
+        self.finished = False
+
     def run(self):
-        bufferSize  = 4096
-        
+        bufferSize = 4096
+
         # Create a datagram socket
         serverSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
         serverSocket.bind((self.control.host, self.control.port))
@@ -152,35 +151,33 @@ class VollibspotifyMetadataListener(threading.Thread):
             bytesAddressPair = serverSocket.recvfrom(bufferSize)
             message = bytesAddressPair[0]
             try:
-                message=message.decode("utf-8") 
+                message = message.decode("utf-8")
             except:
                 logging.warning("can't decode %s", message)
-                message=""
-                
-                
-            if message=="kSpPlaybackInactive":
+                message = ""
+
+            if message == "kSpPlaybackInactive":
                 self.control.set_state(STATE_PAUSED)
-            elif message=="kSpSinkInactive":
+            elif message == "kSpSinkInactive":
                 self.control.set_state(STATE_PAUSED)
             elif message == 'kSpDeviceInactive':
                 self.control.set_state(STATE_STOPPED)
-            elif message in ["kSpSinkActive","kSpPlaybackActive"]: 
+            elif message in ["kSpSinkActive", "kSpPlaybackActive"]:
                 self.control.set_state(STATE_PLAYING)
-            elif message[0]=='{':
+            elif message[0] == '{':
                 self.parse_message(message)
                 self.control.report_alive()
             elif message in [ "\r\n" , "kSpPlaybackLoading", "kSpDeviceActive"]:
-                logging.debug("ignoring message %s",message)
+                logging.debug("ignoring message %s", message)
                 self.control.report_alive()
             else:
-                logging.error("Don't know what to do with %s",message)
+                logging.error("Don't know what to do with %s", message)
                 self.control.report_alive()
-                
-                
-            logging.debug("processed %s",message)
-                
-    def parse_message(self,message):
-        try: 
+
+            logging.debug("processed %s", message)
+
+    def parse_message(self, message):
+        try:
             data = json.loads(message)
             logging.debug(data)
             if "metadata" in data:
@@ -191,7 +188,7 @@ class VollibspotifyMetadataListener(threading.Thread):
                 md.playerName = MYNAME
                 self.control.metadata = md
             elif "position_ms" in data:
-                pos=float(data["position_ms"])/1000
+                pos = float(data["position_ms"]) / 1000
                 self.control.metadata.set_position(pos)
             elif "volume" in data:
                 logging.debug("ignoring volume data")
@@ -206,33 +203,30 @@ class VollibspotifyMetadataListener(threading.Thread):
                 elif state == 'play':
                     self.control.set_state(STATE_PLAYING)
             else:
-                logging.warning("don't know how to handle %s",data)
-                
+                logging.warning("don't know how to handle %s", data)
+
         except Exception as e:
-            logging.error("error while parsing %s (%s)", message,e)
-            
-            
-    def cover_url(self,artids):
-        if artids is None or len(artids)==0:
+            logging.error("error while parsing %s (%s)", message, e)
+
+    def cover_url(self, artids):
+        if artids is None or len(artids) == 0:
             return None
-        
+
         # Use the last one for now which seems to be the highest resolution
-        artworkid=artids[len(artids)-1]
-        return "https://i.scdn.co/image/"+artworkid
-    
-    
+        artworkid = artids[len(artids) - 1]
+        return "https://i.scdn.co/image/" + artworkid
+
 
 #
 # A thread that regularly sends token request
 #
 class VollibspotifyTokenRefresher(threading.Thread):
-    
+
     def __init__(self, control):
         threading.Thread.__init__(self)
         self.control = control
-        self.finished=False
-        
-        
+        self.finished = False
+
     def run(self):
         while (not self.finished):
             self.control.send_command(VOLSPOTIFY_HEARTBEAT, mapping=False)
