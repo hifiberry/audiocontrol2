@@ -137,7 +137,7 @@ def parse_config(debugmode=False):
         mpris.register_metadata_display(server)
         server.set_player_control(mpris)
         server.add_updater(mpris)
-        if config.get("webserver", "socketio_enabled", fallback=False):
+        if config.getboolean("webserver", "socketio_enabled", fallback=False):
             init_socketio_api(server)
 
         server.start()
