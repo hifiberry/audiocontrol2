@@ -138,6 +138,12 @@ class AudioControlWebserver(MetadataDisplay):
         self.bottle.route('/api/player/stopall',
                           method="POST",
                           callback=self.stopall_handler)
+        self.bottle.route('/api/player/stop-all/<player>',
+                          method="POST",
+                          callback=self.stopall_handler)
+        self.bottle.route('/api/player/stop-all',
+                          method="POST",
+                          callback=self.stopall_handler)
         self.bottle.route('/api/player/<command>',
                           method="POST",
                           callback=self.playercontrol_handler)
