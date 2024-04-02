@@ -414,6 +414,7 @@ def main():
         logging.exception(e)
 
     logging.info("Main thread stopped")
+    system.exit(1)
 
 
 main()
