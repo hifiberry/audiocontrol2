@@ -23,7 +23,6 @@ import os
 from typing import Dict
 
 from smbus import SMBus
-import RPi.GPIO as GPIO
 
 from ac2.constants import STATE_PLAYING, STATE_UNDEF
 from ac2.plugins.control.controller import Controller
@@ -86,8 +85,14 @@ class Powercontroller(Controller):
         self.intpinpi = 0
 
         # configure GPIO
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup((4, 14, 15), GPIO.IN)
+        try:
+            import RPi.GPIO as GPIO
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setup((4, 14, 15), GPIO.IN)
+        except:
+            logging.error("Couldn't import RPi.GPIO, won't load powercontroller module")
+            self.finished = True
+            return
 
         if params is None:
             params = {}
