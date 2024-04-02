@@ -33,6 +33,7 @@ import logging
 import os
 import sys
 import threading
+import sys
 
 from ac2.webserver import AudioControlWebserver
 from usagecollector.client import report_activate
@@ -414,7 +415,7 @@ def main():
         logging.exception(e)
 
     logging.info("Main thread stopped")
-    system.exit(1)
+    sys.exit(1)
 
 
 main()
