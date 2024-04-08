@@ -1,6 +1,7 @@
 import glob
 import subprocess
 import logging
+import os
 
 
 def run_blocking_command(command):
@@ -19,13 +20,13 @@ def get_hw_params(file_path):
         return None
 
 
-def kill_players():
-    command = "lsof /dev/snd/pcmC*D*p | grep -v COMMAND | awk '{print $2}' | xargs kill"
+def kill_player(processname):
+    command = "pkill " + processname
     run_blocking_command(command)
 
 
-def kill_kill_players():
-    command = "lsof /dev/snd/pcmC*D*p | grep -v COMMAND | awk '{print $2}' | xargs kill -KILL"
+def kill_kill_player(processname):
+    command = "pkill -KILL " + processname
     run_blocking_command(command)
 
 
@@ -41,8 +42,14 @@ def is_alsa_playing():
     return False
 
 
-def is_process_playing(processname):
-    command = "lsof /dev/snd/pcmC*D*p | grep -v COMMAND | awk '{print $1}'"
+def active_player():
+    # Check if the "active-alsa-processes" script exists, use lsof otherwise
+    script_path = "/opt/hifiberry/bin/active-alsa-processes"
+    if os.path.exists(script_path):
+        command = f"{script_path}"
+    else:
+        command = "lsof /dev/snd/pcmC*D*p | grep -v COMMAND | awk '{print $1}'"
+
     procs = []
     try:
         output = subprocess.check_output(command, shell=True, text=True)
@@ -51,8 +58,6 @@ def is_process_playing(processname):
         # Handle if the command returns a non-zero exit status
         logging.exception(e)
 
-    for p in procs:
-        if p == processname:
-            return True
+    procs = [os.path.basename(p) for p in procs]
 
-    return False
+    return procs[0] if procs else None

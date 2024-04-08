@@ -39,7 +39,7 @@ from expiringdict import ExpiringDict
 from ac2.metadata import Metadata
 from ac2.plugins.metadata import MetadataDisplay
 from ac2.socketio import sio
-from ac2.ostools import is_alsa_playing, kill_kill_players, kill_players, is_process_playing
+from ac2.ostools import is_alsa_playing, kill_kill_player, kill_player, active_player
 from ac2.processmapper import ProcessMapper
 
 
@@ -210,6 +210,8 @@ class AudioControlWebserver(MetadataDisplay):
 
     def stopall_handler(self, player=None):
 
+        activeProcess = None
+
         try:
             stopped = not(is_alsa_playing())
             if stopped:
@@ -218,11 +220,14 @@ class AudioControlWebserver(MetadataDisplay):
 
             # Pause except for a specific player
             if player is not None and player != "":
-
                 processname = self.process_mapper.get_process_name(player, player)
-                if is_process_playing(processname):
+                logging.error(processname)
+                activeProcess = active_player()
+                if activeProcess == processname:
                     logging.info("Player %s is playing, not stopping it", processname)
                     return "ok"
+                else:
+                    logging.info("active player: %s", activeProcess)
 
             sleeptimes = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 
@@ -238,7 +243,7 @@ class AudioControlWebserver(MetadataDisplay):
             logging.info("Player still running after sending pause command")
 
             # now try a kill
-            kill_players()
+            kill_player(activeProcess)
             for t in sleeptimes:
                 time.sleep(t)
                 if not(is_alsa_playing()):
@@ -246,7 +251,7 @@ class AudioControlWebserver(MetadataDisplay):
 
             logging.info("Player still running after sending kill")
             # now do it the hard way using kill -KILL
-            kill_kill_players()
+            kill_kill_players(activeProcess)
             for t in sleeptimes:
                 time.sleep(t)
                 if not(is_alsa_playing()):
