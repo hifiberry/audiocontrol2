@@ -218,7 +218,7 @@ class Powercontroller(Controller):
                 while not self.finished:
                     # Blocks until at least one event is available
                     for event in request.read_edge_events():
-                        self.interrupt_callback(None)
+                        self.interrupt_callback()
         except Exception as e:
             logging.error("Error during event wait or callback: %s", e)
             self.finished = True
