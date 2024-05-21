@@ -61,6 +61,15 @@ BUTTONMODE_SHORT_LONG_PRESS = 0
 
 MIN_VERSION = 4  # requires functionality to set interrupt pin that was introduced in v4
 
+GPIO = None
+try:
+   import RPi.GPIO as GPIO
+   GPIO.setmode(GPIO.BCM)
+   GPIO.setup((4, 14, 15), GPIO.IN)
+   logging.info("Initializing GPIO")
+except:
+   logging.error("Couldn't import RPi.GPIO, won't load powercontroller module")
+
 
 def twos_comp(val, bits):
     """compute the 2's complement of int value val"""
@@ -86,14 +95,19 @@ class Powercontroller(Controller):
 
         # configure GPIO
         try:
-            import RPi.GPIO as GPIO
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setup((4, 14, 15), GPIO.IN)
+            if GPIO is not None:
+                GPIO.setmode(GPIO.BCM)
+                GPIO.setup((4, 14, 15), GPIO.IN)
+                logging.info("Initialized GPIO")
+            else:
+                self.finished = True 
         except:
-            logging.error("Couldn't import RPi.GPIO, won't load powercontroller module")
             self.finished = True
-            return
 
+        if self.finished:
+            logging.error("Couldn't initialize GPIO, aborting")
+            return
+        
         if params is None:
             params = {}
 
@@ -201,9 +215,8 @@ class Powercontroller(Controller):
             self.finished = True
 
     def run(self):
-
         try:
             GPIO.add_event_detect(self.intpinpi, GPIO.BOTH, callback=self.interrupt_callback)
         except Exception as e:
-            logging.error("Couldn't start GPIO callback, aborting... (%s)", e)
+            logging.error("Couldn't start GPIO callback in pin %s, aborting... (%s)", self.intpinpi, e)
             self.finished = True
