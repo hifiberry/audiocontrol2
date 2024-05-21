@@ -23,6 +23,8 @@ import os
 from typing import Dict
 
 from smbus import SMBus
+import gpiod
+from gpiod.line import Edge
 
 from ac2.constants import STATE_PLAYING, STATE_UNDEF
 from ac2.plugins.control.controller import Controller
@@ -55,20 +57,11 @@ INTPINS = {
     1: 4,
     2: 15,
     3: 14
-    }
+}
 
 BUTTONMODE_SHORT_LONG_PRESS = 0
 
 MIN_VERSION = 4  # requires functionality to set interrupt pin that was introduced in v4
-
-GPIO = None
-try:
-   import RPi.GPIO as GPIO
-   GPIO.setmode(GPIO.BCM)
-   GPIO.setup((4, 14, 15), GPIO.IN)
-   logging.info("Initializing GPIO")
-except:
-   logging.error("Couldn't import RPi.GPIO, won't load powercontroller module")
 
 
 def twos_comp(val, bits):
@@ -83,7 +76,7 @@ class Powercontroller(Controller):
     Support for the HiFiBerry power controller
     """
 
-    def __init__(self, params: Dict[str, str]=None):
+    def __init__(self, params: Dict[str, str] = None):
         super().__init__()
 
         self.name = "powercontroller"
@@ -92,22 +85,20 @@ class Powercontroller(Controller):
         self.stepsize = 2
         self.intpin = 0
         self.intpinpi = 0
+        self.chippath = "/dev/gpiochip0"
 
         # configure GPIO
         try:
-            if GPIO is not None:
-                GPIO.setmode(GPIO.BCM)
-                GPIO.setup((4, 14, 15), GPIO.IN)
-                logging.info("Initialized GPIO")
-            else:
-                self.finished = True 
-        except:
+            self.chip = gpiod.Chip(self.chippath)
+            logging.info("Initialized GPIO using gpiod")
+        except Exception as e:
+            logging.error("Couldn't initialize gpiod, won't load powercontroller module: %s", e)
             self.finished = True
 
         if self.finished:
             logging.error("Couldn't initialize GPIO, aborting")
             return
-        
+
         if params is None:
             params = {}
 
@@ -140,6 +131,7 @@ class Powercontroller(Controller):
         except Exception as e:
             logging.error("no power controller found, ignoring, %s", e)
             self.finished = True
+
 
     def init_controller(self):
         self.bus.write_byte_data(ADDRESS, REG_BUTTONPOWEROFFTIME, 20)  # We deal with this directly
@@ -189,34 +181,44 @@ class Powercontroller(Controller):
 
         os.system("systemctl poweroff")
 
-    def interrupt_callback(self, channel):
+    def interrupt_callback(self):
         logging.info("Received interrupt")
 
         try:
             rotary_change = twos_comp(self.bus.read_byte_data(ADDRESS, REG_ROTARYCHANGE), 8)  # this is a signed byte
             button_state = self.bus.read_byte_data(ADDRESS, REG_BUTTONSTATE)
 
+            logging.info("Received interrupt (rotary_change=%s, button_state=%s)",rotary_change, button_state)
+
             if rotary_change != 0:
                 self.volchange(rotary_change * self.stepsize)
 
             if button_state == 1:
-                # short pressure_network
+                # short press
                 self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
                 self.playpause()
             elif button_state == 2:
                 # Long press
                 self.bus.write_byte_data(ADDRESS, REG_BUTTONSTATE, 0)
-                self.shutdown();
+                self.shutdown()
 
-            logging.info("Received interrupt (rotary_change=%s, button_state=%s",
-                         rotary_change, button_state)
+
         except Exception as e:
-            logging.error("Couldn't read data form I2C, aborting... (%s)", e)
+            logging.error("Couldn't read data from I2C, aborting... (%s)", e)
             self.finished = True
 
     def run(self):
         try:
-            GPIO.add_event_detect(self.intpinpi, GPIO.BOTH, callback=self.interrupt_callback)
+            with gpiod.request_lines(
+                self.chippath,
+                consumer="watch-line-rising",
+                config={self.intpinpi: 
+                        gpiod.LineSettings(edge_detection=Edge.BOTH)},
+            ) as request:
+                while not self.finished:
+                    # Blocks until at least one event is available
+                    for event in request.read_edge_events():
+                        self.interrupt_callback(None)
         except Exception as e:
-            logging.error("Couldn't start GPIO callback in pin %s, aborting... (%s)", self.intpinpi, e)
+            logging.error("Error during event wait or callback: %s", e)
             self.finished = True
