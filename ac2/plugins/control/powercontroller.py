@@ -21,10 +21,12 @@ import logging
 import time
 import os
 from typing import Dict
+from datetime import timedelta
 
 from smbus import SMBus
 import gpiod
 from gpiod.line import Edge
+import select
 
 from ac2.constants import STATE_PLAYING, STATE_UNDEF
 from ac2.plugins.control.controller import Controller
@@ -182,8 +184,6 @@ class Powercontroller(Controller):
         os.system("systemctl poweroff")
 
     def interrupt_callback(self):
-        logging.info("Received interrupt")
-
         try:
             rotary_change = twos_comp(self.bus.read_byte_data(ADDRESS, REG_ROTARYCHANGE), 8)  # this is a signed byte
             button_state = self.bus.read_byte_data(ADDRESS, REG_BUTTONSTATE)
@@ -211,12 +211,20 @@ class Powercontroller(Controller):
         try:
             with gpiod.request_lines(
                 self.chippath,
-                consumer="watch-line-rising",
-                config={self.intpinpi: 
-                        gpiod.LineSettings(edge_detection=Edge.BOTH)},
+                consumer="async-watch-line-value",
+                config={
+                    self.intpinpi: gpiod.LineSettings(
+                        edge_detection=Edge.BOTH,
+                        debounce_period=timedelta(milliseconds=10),
+                    )
+                },
             ) as request:
-                while not self.finished:
-                    # Blocks until at least one event is available
+                poll = select.poll()
+                poll.register(request.fd, select.POLLIN)
+                while True:
+                    # Other fds could be registered with the poll and be handled
+                    # separately using the return value (fd, event) from poll()
+                    poll.poll()
                     for event in request.read_edge_events():
                         self.interrupt_callback()
         except Exception as e:
