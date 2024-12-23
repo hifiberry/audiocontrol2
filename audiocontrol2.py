@@ -101,7 +101,7 @@ def create_object(classname, param=None):
 def parse_config(debugmode=False):
     server = None
 
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=None)
     config.optionxform = lambda option: option
 
     config.read("/etc/audiocontrol2.conf")
