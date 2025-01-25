@@ -2,6 +2,7 @@ from setuptools import setup, find_packages, Command
 from pathlib import Path
 import os
 import shutil
+from ac2.version import VERSION
 
 # Disable pybuild tests via environment variables
 os.environ["PYBUILD_DISABLE_python3"] = "unittest"  # Disable unittest in pybuild
@@ -86,7 +87,7 @@ long_description = Path("README.md").read_text() if Path("README.md").exists() e
 
 setup(
     name="audiocontrol2",
-    version="1.0.0",
+    version=VERSION,
     description=description,
     long_description=long_description,
     author="HiFiBerry",
