@@ -80,7 +80,10 @@ setup(
         "mpd",
         "dbus",
         "pylast",
-        "usagecollector"
+        "usagecollector",
+        "netifaces",
+        "requests",
+        "evdev"
     ],
     entry_points={
         "console_scripts": [
