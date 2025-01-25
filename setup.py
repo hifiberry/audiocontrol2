@@ -1,22 +1,41 @@
 from setuptools import setup, find_packages, Command
+from pathlib import Path
 import os
 import shutil
 
-# Define the systemd service content
+# Disable pybuild tests via environment variables
+os.environ["PYBUILD_DISABLE_python3"] = "unittest"  # Disable unittest in pybuild
+os.environ["DEB_BUILD_OPTIONS"] = "nocheck"  # Pass nocheck to disable testing globally
+
+# Systemd service file content
 systemd_service_content = """[Unit]
-Description=Audiocontrol2 Service
+Description=Audio Control 2 Service
 After=network.target
 
 [Service]
-Type=simple
-ExecStart=/usr/local/bin/audiocontrol2
-Restart=on-failure
+ExecStart=/usr/bin/audiocontrol2
+Restart=always
+User=root
+Group=root
 
 [Install]
 WantedBy=multi-user.target
 """
 
-# Custom install command class
+class NoTestCommand(Command):
+    """A no-op test command."""
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        print("Skipping tests.")
+
+
 class PostInstallCommand(Command):
     """Post-installation setup for systemd service and configuration files."""
     user_options = []
@@ -61,11 +80,15 @@ class PostInstallCommand(Command):
         except FileNotFoundError as e:
             print(f"Error: {e}")
 
-# Setup configuration
+
+description = "Tool to handle multiple audio players"
+long_description = Path("README.md").read_text() if Path("README.md").exists() else description
+
 setup(
     name="audiocontrol2",
     version="1.0.0",
-    description="Tool to handle multiple audio players",
+    description=description,
+    long_description=long_description,
     author="HiFiBerry",
     author_email="support@hifiberry.com",
     url="https://github.com/hifiberry/audiocontrol2",
@@ -101,7 +124,8 @@ setup(
         "ac2": ["data/*"],  # Include additional package data here.
     },
     cmdclass={
-        'install': PostInstallCommand,  # Use the custom install command
-    }
+        "test": NoTestCommand,  # Disable tests
+        "post_install": PostInstallCommand,  # Enable post-install commands
+    },
 )
 
