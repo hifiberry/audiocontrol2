@@ -110,3 +110,6 @@ update
 Pipfile.lock
 .vscode/settings.json
 /.vs
+
+audiocontrol*.tar.gz
+deb_dist
