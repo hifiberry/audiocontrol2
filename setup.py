@@ -11,7 +11,7 @@ os.environ["DEB_BUILD_OPTIONS"] = "nocheck"  # Pass nocheck to disable testing g
 # Systemd service file content
 systemd_service_content = """[Unit]
 Description=Audio Control 2 Service
-After=network.target
+After=network.target pipewire-system.service
 
 [Service]
 ExecStart=/usr/bin/audiocontrol2
